@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: ai-interview-assistant
+  datasource:
+    url: jdbc:postgresql://localhost:5432/interview_guide
+    username: postgres
+    password: 123456
+
