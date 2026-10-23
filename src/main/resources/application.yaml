@@ -2,7 +2,11 @@ spring:
   application:
     name: ai-interview-assistant
   datasource:
-    url: jdbc:postgresql://localhost:5432/interview_guide
+    url: jdbc:postgresql://localhost:5432/ai_interview
     username: postgres
     password: 123456
+  data:
+    redis:
+      host: localhost
+      port: 6379
 

@@ -1,0 +1,27 @@
+name: ai-interview-assistant
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: ai-interview-assistant-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: ai_interview
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: ai-interview-assistant-redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  pgdata:
