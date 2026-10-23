@@ -35,3 +35,7 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# Local study plan (do not commit)
+/PRE_PROPOSAL_PLAN.local.md
+
