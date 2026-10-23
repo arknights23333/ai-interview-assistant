@@ -1,0 +1,33 @@
+# 依赖（由 package-lock.json 重新安装，禁止提交）
+node_modules/
+
+# 构建产物（npm run build 生成）
+dist/
+dist-ssr/
+
+# 环境变量（含密钥，绝不提交；env.d.ts 是 TS 声明文件，不受影响）
+.env
+.env.*
+!.env.example
+
+# ESLint / Vite 缓存
+.eslintcache
+.vite/
+
+# 日志
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 编辑器与系统文件
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
