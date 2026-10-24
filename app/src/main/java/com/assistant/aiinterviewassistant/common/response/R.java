@@ -11,7 +11,7 @@ public class R<T> {
    private final static int SUCCESS = 200;
    private final static int ERROR = 500;
 
-   public static <T> R<T> ok(){
+    public static <T> R<T> ok(){
        R<T> r = new R<>();
        r.setCode(SUCCESS);
        return r;
@@ -31,6 +31,12 @@ public class R<T> {
         R<T> r = new R<>();
         r.setCode(code);
         r.setMsg(meg);
+        return r;
+    }
+    public static <T> R<T> ok(T data ){
+        R<T> r = new R<>();
+        r.setCode(SUCCESS);
+        r.setData(data);
         return r;
     }
 
