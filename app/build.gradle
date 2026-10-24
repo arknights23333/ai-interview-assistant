@@ -20,7 +20,7 @@ repositories {
 }
 
 dependencies {
-    implementation libs.spring.boot.starter.data.jpa
+
     implementation libs.spring.boot.starter.validation
     implementation libs.spring.boot.starter.webmvc
     implementation libs.spring.boot.starter.data.redis
@@ -28,7 +28,8 @@ dependencies {
     developmentOnly libs.spring.boot.devtools
     runtimeOnly libs.postgresql
     annotationProcessor libs.lombok
-    testImplementation libs.spring.boot.starter.data.jpa.test
+    implementation libs.mybatis.plus.spring.boot4.starter
+    implementation libs.spring.boot.starter.security
     testImplementation libs.spring.boot.starter.validation.test
     testImplementation libs.spring.boot.starter.webmvc.test
     testCompileOnly libs.lombok

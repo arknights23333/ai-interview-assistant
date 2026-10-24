@@ -32,7 +32,7 @@ com.assistant.aiinterviewassistant
     └── model
 ```
 
-每个业务模块建立 `controller`、`service`、`repository`、`entity`、`dto`、`mapper` 包。`package-info.java` 说明包职责并使目录随 Git 保留；目前没有对应的业务实现类。
+每个业务模块建立 `controller`、`service`、`repository`、`mapper` 和 `domain` 包。持久化对象放在 `domain/po`，请求、响应及数据传输对象放在 `domain/dto`。`package-info.java` 说明包职责并使目录随 Git 保留。
 
 ## 业务职责
 
