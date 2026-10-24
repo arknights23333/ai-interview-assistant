@@ -16,7 +16,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @TableName("app_user")
-public class UserPO {
+public class UserPo {
 
   /** 用户主键，由数据库自增生成。 */
   @TableId(value = "id", type = IdType.AUTO)
