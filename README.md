@@ -1,6 +1,6 @@
 # 智能面试辅助系统
 
-基于 Java、Spring Boot 和 Vue 的个人毕业设计项目，当前处于工程骨架搭建阶段。需求范围见 [软件需求规格说明书](docs/requirements/SRS.md)，模型计划见 [模型选型](docs/MODEL_SELECTION.md)。
+基于 Java、Spring Boot 和 Vue 的个人毕业设计项目，当前处于基础工程与认证模块开发阶段。需求范围见 [软件需求规格说明书](docs/requirements/SRS.md)，模型计划见 [模型选型](docs/MODEL_SELECTION.md)，版本依据与接入状态见 [技术栈](docs/TECH_STACK.md)。
 
 ## 工程结构
 
@@ -20,6 +20,17 @@ ai-interview-assistant/
 ```
 
 业务包与协作边界见 [后端结构说明](docs/ARCHITECTURE.md)。
+
+## 技术栈与当前进度
+
+- 后端：Java 25、Spring Boot 4.1.1、Gradle 9.8.2、MyBatis-Plus 3.5.17；已从初始 JPA 骨架切换至 Mapper 持久层。
+- 数据：PostgreSQL 16（开发镜像包含 pgvector）、Redis 7、Flyway；首份用户表迁移已建立。
+- 安全：选定 Spring Security + JWT + Redis + BCrypt；当前只验证了默认 Basic Auth 下的用户查询，正式账号认证和 Token 会话尚未完成。
+- 前端：Vue 3、TypeScript、Vite、Vue Router、Pinia，代码在 `front/`；精确版本范围见其 package.json。
+- 联调：Apifox Helper 从代码与 Javadoc 同步接口，根目录保存公共规则，个人令牌不提交。
+- 后续：Spring AI、RAG/pgvector 业务检索、Redis Stream、S3 兼容存储和邮箱发送尚待接入。
+
+用户模块已有 `UserPo`、`UserVo`、`UserMapper`、`UserService` / `UserServiceImpl`、统一响应 `R<T>`；开发查询接口 `GET /api/user/auth/{userID}` 已由项目负责人确认联调成功。此接口当前按传入 ID 查询，不是正式登录接口，也不代表已实现本人数据隔离。
 
 ## 本地开发
 
