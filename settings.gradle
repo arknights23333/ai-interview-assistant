@@ -7,3 +7,5 @@ pluginManagement {
 }
 
 rootProject.name = 'ai-interview-assistant'
+
+include 'app'

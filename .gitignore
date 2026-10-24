@@ -39,3 +39,7 @@ out/
 # Local study plan (do not commit)
 /PRE_PROPOSAL_PLAN.local.md
 
+# Local backend credentials
+/.env
+/.env.*
+!/.env.example
