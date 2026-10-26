@@ -9,4 +9,8 @@ spring:
     redis:
       host: localhost
       port: 6379
+security:
+  jwt:
+    issuer: ai-interview-assistant
+    secret-key: ${JWT_SECRET:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
 

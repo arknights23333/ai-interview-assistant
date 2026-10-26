@@ -37,6 +37,7 @@ dependencies {
     testAnnotationProcessor libs.lombok
     implementation libs.spring.boot.starter.flyway
     runtimeOnly libs.flyway.database.postgresql
+    implementation libs.spring.boot.starter.security.oauth2.resource.server
 }
 
 tasks.named('test') {
