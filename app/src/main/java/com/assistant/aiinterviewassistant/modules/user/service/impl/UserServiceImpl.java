@@ -19,7 +19,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
     public UserPo getUserByUsername(String username) {
         return this.baseMapper.selectOne(new LambdaQueryWrapper<UserPo>()
                 .eq(UserPo::getUsername, username)
-                .eq(UserPo::getStatus, UserStatusConstant.ACTIVE)
         );
     }
 }
