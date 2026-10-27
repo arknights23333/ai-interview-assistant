@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceotionHandler {
 
     @ExceptionHandler(LoginException.class)
-    public R handleLoginException()
+    public R handleLoginException(Exception e)
     {
-        return R.fail(401,"登录异常");
+        return R.fail(401,e.getMessage());
     }
 }
