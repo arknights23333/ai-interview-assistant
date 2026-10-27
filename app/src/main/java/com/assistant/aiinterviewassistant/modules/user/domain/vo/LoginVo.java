@@ -1,11 +1,13 @@
 package com.assistant.aiinterviewassistant.modules.user.domain.vo;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 /**
  * 登录成功后返回的登录凭证及用户信息。
  */
 @Data
+@AllArgsConstructor
 public class LoginVo {
 
     /** 访问受保护接口时携带的登录凭证。 */
