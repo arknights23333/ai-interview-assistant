@@ -22,7 +22,7 @@ public class JwtServiceImpl implements JwtService {
         return generateToken(userId, sessionId, properties.getValiditySeconds());
     }
     public String generateToken(Long userId, String sessionId,long validitySeconds) {
-        if(validitySeconds > 0){
+        if(validitySeconds <=0){
             throw new LoginException("Token 有效期必须大于0");
         }
         Instant Now =Instant.now();
