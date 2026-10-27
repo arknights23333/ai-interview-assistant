@@ -1,4 +1,4 @@
-package com.assistant.aiinterviewassistant.modules.user.service.impl;
+package com.assistant.aiinterviewassistant.infrastructure.security;
 
 
 import com.assistant.aiinterviewassistant.modules.user.domain.po.UserPo;
