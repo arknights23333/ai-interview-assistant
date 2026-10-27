@@ -53,10 +53,7 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
         UserPo user = userService.getUserByUsername(dto.getUsername());
         String sessionId = UUID.randomUUID().toString();
         String token = jwtService.generateToken(user.getId(), sessionId, validitySeconds);
-        if(!redisService.hasKey(AuthRedisKeyConstant.AUTH_LOGIN_KEY + user.getId())){
-            redisService.setCacheObject(AuthRedisKeyConstant.AUTH_LOGIN_KEY + user.getId(), sessionId, validitySeconds, TimeUnit.SECONDS);
-        }
-
+        redisService.setCacheObject(AuthRedisKeyConstant.AUTH_LOGIN_KEY + user.getId(), sessionId, validitySeconds, TimeUnit.SECONDS);
 
         return new LoginVo(token, validitySeconds, user.getUsername(), user.getNickname(), user.getEmail(), user.getAvatar(), user.getRole());
 
