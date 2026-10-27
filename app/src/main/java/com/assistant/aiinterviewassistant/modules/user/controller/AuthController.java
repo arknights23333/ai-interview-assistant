@@ -2,9 +2,13 @@ package com.assistant.aiinterviewassistant.modules.user.controller;
 
 
 import com.assistant.aiinterviewassistant.common.response.R;
+import com.assistant.aiinterviewassistant.modules.user.domain.dto.LoginDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.po.UserPo;
+import com.assistant.aiinterviewassistant.modules.user.domain.vo.LoginVo;
 import com.assistant.aiinterviewassistant.modules.user.domain.vo.UserVo;
+import com.assistant.aiinterviewassistant.modules.user.service.AuthService;
 import com.assistant.aiinterviewassistant.modules.user.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +19,8 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final UserService userService;
-    /*
+    private final AuthService authService;
+    /**
      * 根据用户ID获取用户信息,不包含密码
      */
     @GetMapping("/{userID}")
@@ -23,6 +28,17 @@ public class AuthController {
         UserPo po =userService.getById(userID);
         UserVo vo = new UserVo();
         BeanUtils.copyProperties(po,vo);
+        return R.ok(vo);
+    }
+
+    /**
+     * 账号密码登录
+     * @param dto 账号密码
+     * @return 登录结果 ，含token
+     */
+    @PostMapping("/login")
+    public R<LoginVo> login(@Valid @RequestBody LoginDto dto){
+        LoginVo vo = authService.login(dto);
         return R.ok(vo);
     }
 }
