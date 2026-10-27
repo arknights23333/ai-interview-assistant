@@ -1,4 +1,4 @@
-package com.assistant.aiinterviewassistant.modules.user.constant;
+package com.assistant.aiinterviewassistant.infrastructure.redis.constant;
 
 public class AuthRedisKeyConstant {
     /**
