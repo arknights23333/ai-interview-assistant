@@ -1,5 +1,6 @@
 package com.assistant.aiinterviewassistant.common.config;
 
+import com.assistant.aiinterviewassistant.infrastructure.security.RestAuthenticationEntryPoint;
 import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,7 +35,7 @@ public class SecurityConfig {
      * 认证信息只供当前请求使用，不通过 HttpSession 跨请求保存。
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, RestAuthenticationEntryPoint entryPoint) throws Exception {
         http
                 // API 使用 Authorization 请求头主动携带 Token，关闭默认 CSRF 令牌校验。
                 .csrf(AbstractHttpConfigurer::disable)
@@ -53,8 +54,14 @@ public class SecurityConfig {
                 // 关闭 Basic Auth，受保护接口改为接受 Bearer Token 认证。
                 .httpBasic(AbstractHttpConfigurer::disable)
                 // 接入 SC 原生 JWT 过滤器和认证组件，使用 JwtConfig 中提供的 JwtDecoder。
-                .oauth2ResourceServer(oauth2 ->
-                        oauth2.jwt(Customizer.withDefaults())
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(Customizer.withDefaults())
+                        // Bearer Token 认证失败时，调用我们的处理器。
+                        .authenticationEntryPoint(entryPoint)
+                )
+                .exceptionHandling(exceptions -> exceptions
+                        // 未认证请求在授权阶段被拒绝时，调用同一个处理器。
+                        .authenticationEntryPoint(entryPoint)
                 );
 
         return http.build();
