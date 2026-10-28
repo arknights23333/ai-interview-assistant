@@ -58,4 +58,11 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
 
     }
 
+    @Override
+    public void logout(Long userId, String sessionId) {
+
+        redisService.deleteIfValueMatches(AuthRedisKeyConstant.AUTH_LOGIN_KEY + userId, sessionId);
+
+    }
+
 }

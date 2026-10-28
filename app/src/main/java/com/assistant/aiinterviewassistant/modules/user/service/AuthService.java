@@ -12,4 +12,9 @@ public interface AuthService extends IService<UserPo> {
      * @return 登录结果，包含用户信息和令牌
      */
     public LoginVo login(LoginDto dto);
+
+    /**
+     *
+     */
+    void logout(Long userId,String sessionId);
 }

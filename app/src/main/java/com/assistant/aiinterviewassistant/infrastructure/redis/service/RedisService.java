@@ -81,7 +81,7 @@ public class RedisService {
      * @return 执行结果
      * @param <T>返回类型
      */
-    public <T> T excuteScript(String script, Class<T> resultType, List<String> keys,Object... args){
+    public <T> T executeScript(String script, Class<T> resultType, List<String> keys,Object... args){
         DefaultRedisScript<T> redisScript = new DefaultRedisScript<>(script, resultType);
         return redisTemplate.execute(redisScript, keys, args);
     }
@@ -100,8 +100,8 @@ public class RedisService {
                 end
                 return 0
                 """;
-        Long result= excuteScript(scriptText ,Long.class, Collections.singletonList(key),expectedValue);
-        return result!=null&&result!=1L;
+        Long result= executeScript(scriptText ,Long.class, Collections.singletonList(key),expectedValue);
+        return result!=null&&result==1L;
 
     }
 }
