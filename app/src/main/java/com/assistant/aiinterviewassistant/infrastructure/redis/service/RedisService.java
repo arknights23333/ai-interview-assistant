@@ -95,12 +95,12 @@ public class RedisService {
      */
     public boolean deleteIfValueMatches(String key, String expectedValue){
         String scriptText = """ 
-                if redis.call('get',KEY[1]) == AGV[1] then
-                return redis.call('del',KEY[1])
+                if redis.call('get',KEYS[1]) == ARGV[1] then
+                return redis.call('del',KEYS[1])
                 end
                 return 0
                 """;
-        Long result= excuteScript(scriptText ,Long.class, Collections.singletonList(key));
+        Long result= excuteScript(scriptText ,Long.class, Collections.singletonList(key),expectedValue);
         return result!=null&&result!=1L;
 
     }
