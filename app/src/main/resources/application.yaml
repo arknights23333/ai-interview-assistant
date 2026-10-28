@@ -1,6 +1,22 @@
 spring:
   application:
     name: ai-interview-assistant
+  # QQ 邮箱发信配置，账号和授权码由 IDEA VM options 提供。
+  mail:
+    host: smtp.qq.com
+    port: 465
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+          # SMTP 连接、读取和写入超时，单位为毫秒。
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
   datasource:
     url: jdbc:postgresql://localhost:5432/ai_interview
     username: postgres
