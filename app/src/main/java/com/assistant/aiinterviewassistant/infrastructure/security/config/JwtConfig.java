@@ -1,4 +1,4 @@
-package com.assistant.aiinterviewassistant.common.config;
+package com.assistant.aiinterviewassistant.infrastructure.security.config;
 
 import com.assistant.aiinterviewassistant.infrastructure.security.LoginSessionValidator;
 import java.util.Base64;

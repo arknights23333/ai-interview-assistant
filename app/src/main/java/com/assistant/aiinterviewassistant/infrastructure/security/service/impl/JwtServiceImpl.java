@@ -1,8 +1,8 @@
-package com.assistant.aiinterviewassistant.modules.user.service.impl;
+package com.assistant.aiinterviewassistant.infrastructure.security.service.impl;
 
-import com.assistant.aiinterviewassistant.common.config.JwtProperties;
+import com.assistant.aiinterviewassistant.infrastructure.security.config.JwtProperties;
 import com.assistant.aiinterviewassistant.common.exception.LoginException;
-import com.assistant.aiinterviewassistant.modules.user.service.JwtService;
+import com.assistant.aiinterviewassistant.infrastructure.security.service.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.*;

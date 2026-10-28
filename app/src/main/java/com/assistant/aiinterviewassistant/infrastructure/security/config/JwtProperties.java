@@ -1,4 +1,4 @@
-package com.assistant.aiinterviewassistant.common.config;
+package com.assistant.aiinterviewassistant.infrastructure.security.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

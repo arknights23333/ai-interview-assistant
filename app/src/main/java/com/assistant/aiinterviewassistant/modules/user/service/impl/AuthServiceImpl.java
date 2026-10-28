@@ -1,6 +1,6 @@
 package com.assistant.aiinterviewassistant.modules.user.service.impl;
 
-import com.assistant.aiinterviewassistant.common.config.JwtProperties;
+import com.assistant.aiinterviewassistant.infrastructure.security.config.JwtProperties;
 import com.assistant.aiinterviewassistant.common.exception.LoginException;
 import com.assistant.aiinterviewassistant.infrastructure.redis.RedisService;
 import com.assistant.aiinterviewassistant.infrastructure.redis.constant.AuthRedisKeyConstant;
@@ -9,7 +9,7 @@ import com.assistant.aiinterviewassistant.modules.user.domain.po.UserPo;
 import com.assistant.aiinterviewassistant.modules.user.domain.vo.LoginVo;
 import com.assistant.aiinterviewassistant.modules.user.mapper.UserMapper;
 import com.assistant.aiinterviewassistant.modules.user.service.AuthService;
-import com.assistant.aiinterviewassistant.modules.user.service.JwtService;
+import com.assistant.aiinterviewassistant.infrastructure.security.service.JwtService;
 import com.assistant.aiinterviewassistant.modules.user.service.UserService;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;

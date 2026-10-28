@@ -1,4 +1,4 @@
-package com.assistant.aiinterviewassistant.common.config;
+package com.assistant.aiinterviewassistant.infrastructure.redis.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

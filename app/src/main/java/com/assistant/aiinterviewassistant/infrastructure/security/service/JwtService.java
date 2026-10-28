@@ -1,4 +1,4 @@
-package com.assistant.aiinterviewassistant.modules.user.service;
+package com.assistant.aiinterviewassistant.infrastructure.security.service;
 
 public interface JwtService {
         /**

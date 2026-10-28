@@ -17,6 +17,12 @@ com.assistant.aiinterviewassistant
 │   └── config
 ├── infrastructure
 │   ├── security
+│   │   ├── config
+│   │   └── service
+│   │       └── impl
+│   ├── redis
+│   │   ├── config
+│   │   └── constant
 │   ├── storage
 │   ├── async
 │   └── export
@@ -35,6 +41,8 @@ com.assistant.aiinterviewassistant
 每个业务模块使用 `controller`、`service`、`mapper` 和 `domain`。持久化对象统一放在 `domain/po`，请求及数据传输对象放在 `domain/dto`；展示响应对象按需放在 `domain/vo`，用户模块已采用 `UserVo`。类型名使用 `UserPo`、`UserVo`、`UserMapper` 等驼峰命名。实现类位于 `service/impl`。
 
 `mapper` 当前用于 MyBatis-Plus 数据库 Mapper，不再兼作 MapStruct 对象转换包；如后续引入 MapStruct，单独设置转换职责。原骨架中的 `repository` 目录可保留为待用占位，不要求为一次数据库查询再加一层空转 Repository；当前持久层不使用 JPA。部分历史 `package-info.java` 的 Mapper 描述仍待后续清理，以上述职责为准。
+
+技术组件的配置按能力归属：`SecurityConfig`、`JwtConfig`、`JwtProperties` 放在 `infrastructure/security/config`，JWT 签发接口与实现放在 `infrastructure/security/service` 及其 `impl`；`RedisConfig` 放在 `infrastructure/redis/config`，通用缓存服务和键常量分别位于 `infrastructure/redis`、`infrastructure/redis/constant`。`common/config` 仅作为后续跨技术公共配置的占位，不再集中存放安全、JWT 或 Redis 专属配置。
 
 ## 业务职责
 
