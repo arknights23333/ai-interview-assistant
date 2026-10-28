@@ -2,7 +2,7 @@ package com.assistant.aiinterviewassistant.modules.user.service.impl;
 
 import com.assistant.aiinterviewassistant.infrastructure.security.config.JwtProperties;
 import com.assistant.aiinterviewassistant.common.exception.LoginException;
-import com.assistant.aiinterviewassistant.infrastructure.redis.RedisService;
+import com.assistant.aiinterviewassistant.infrastructure.redis.service.RedisService;
 import com.assistant.aiinterviewassistant.infrastructure.redis.constant.AuthRedisKeyConstant;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.LoginDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.po.UserPo;

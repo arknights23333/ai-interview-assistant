@@ -1,6 +1,6 @@
 package com.assistant.aiinterviewassistant.infrastructure.security;
 
-import com.assistant.aiinterviewassistant.infrastructure.redis.RedisService;
+import com.assistant.aiinterviewassistant.infrastructure.redis.service.RedisService;
 import com.assistant.aiinterviewassistant.infrastructure.redis.constant.AuthRedisKeyConstant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.core.OAuth2Error;
