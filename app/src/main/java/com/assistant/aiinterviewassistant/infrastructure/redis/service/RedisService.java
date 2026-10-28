@@ -1,10 +1,13 @@
-package com.assistant.aiinterviewassistant.infrastructure.redis;
+package com.assistant.aiinterviewassistant.infrastructure.redis.service;
 
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -67,5 +70,38 @@ public class RedisService {
      */
     public boolean deleteObject(String key){
         return redisTemplate.delete(key);
+    }
+
+    /**
+     * 执行redis脚本
+     * @param script 脚本内容
+     * @param resultType 返回类型
+     * @param keys 脚本访问键
+     * @param args 脚本参数
+     * @return 执行结果
+     * @param <T>返回类型
+     */
+    public <T> T excuteScript(String script, Class<T> resultType, List<String> keys,Object... args){
+        DefaultRedisScript<T> redisScript = new DefaultRedisScript<>(script, resultType);
+        return redisTemplate.execute(redisScript, keys, args);
+    }
+
+    /**
+     * 当缓存值与预期值匹配时，原子地删除该键。
+     *
+     * @param key Redis 键
+     * @param expectedValue 预期的字符串值
+     * @return true 表示匹配并已删除；false 表示键不存在或值不匹配
+     */
+    public boolean deleteIfValueMatches(String key, String expectedValue){
+        String scriptText = """ 
+                if redis.call('get',KEY[1]) == AGV[1] then
+                return redis.call('del',KEY[1])
+                end
+                return 0
+                """;
+        Long result= excuteScript(scriptText ,Long.class, Collections.singletonList(key));
+        return result!=null&&result!=1L;
+
     }
 }
