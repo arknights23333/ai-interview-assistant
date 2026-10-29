@@ -5,7 +5,9 @@ import com.assistant.aiinterviewassistant.common.exception.LoginException;
 import com.assistant.aiinterviewassistant.common.exception.MailBusinessException;
 import com.assistant.aiinterviewassistant.common.response.R;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -32,6 +34,17 @@ public class GlobalExceotionHandler {
         // ResponseEntity 设置 HTTP 状态，R.code 表达具体业务原因。
         return ResponseEntity.status(e.getHttpStatus())
                 .body(R.<Void>fail(e.getCode(), e.getMessage()));
+    }
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<R<Void>> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+        String message = e.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                .findFirst()
+                .orElse("参数不合法");
+        return ResponseEntity.badRequest()
+                .body(R.<Void>fail(40000, message));
     }
     @ExceptionHandler(Exception.class)
     public ResponseEntity<R<Void>> handleException(Exception e) {

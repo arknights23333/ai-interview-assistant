@@ -22,11 +22,7 @@ public class MailServiceImpl implements MailService {
     private final MailProperties mailProperties;
     //验证码正则
     private static final String CODE_REGEX = "^[0-9]{6}$";
-    //邮箱正则
-    private static final String EMAIL_REGEX =
-            "^[A-Za-z0-9_%+-]+(?:\\.[A-Za-z0-9_%+-]+)*@"
-                    + "[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?"
-                    + "(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$";
+
     @Override
     public void sendVerificationCodeByMail(String to, String code) {
         if (code == null || !code.matches(CODE_REGEX)) {
@@ -34,10 +30,6 @@ public class MailServiceImpl implements MailService {
             throw new MailBusinessException(MailErrorCode.INVALID_GENERATED_CODE);
         }
 
-        if (to == null || !to.matches(EMAIL_REGEX)) {
-            // 收件邮箱格式错误
-            throw new MailBusinessException(MailErrorCode.INVALID_EMAIL);
-        }
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(mailProperties.getUsername());
         message.setTo(to);
