@@ -125,6 +125,39 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
         }
 
     }
+
+    @Override
+    public void verifyAndConsumeMailCode(String email, String code) {
+        String script= """
+                local cacheCode = redis.call('get',KEYS[1])
+                
+                if not cacheCode then
+                return 0
+                end
+                
+                if cacheCode ~= ARGV[1] then
+                return -1
+                end
+                redis.call('del',KEYS[1])
+                return 1
+                """;
+        Long result=redisService.executeScript(
+                script,
+                Long.class,
+                List.of(AuthRedisKeyConstant.AUTH_MAIL_CODE_KEY+email),
+                code
+        );
+        if (result == null) {
+            throw new IllegalStateException("验证码校验脚本未返回执行结果");
+        }
+        if (result == 0L) {
+            throw new MailBusinessException(MailErrorCode.CODE_EXPIRED);
+        }
+        if (result == -1L) {
+            throw new MailBusinessException(MailErrorCode.CODE_MISMATCH);
+        }
+    }
+
     /**
      * 生成 6 位字母数字混合验证码。
      *

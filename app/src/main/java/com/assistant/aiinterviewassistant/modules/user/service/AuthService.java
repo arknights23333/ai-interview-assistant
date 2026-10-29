@@ -28,4 +28,11 @@ public interface AuthService extends IService<UserPo> {
      * @param dto 发送邮件dto
      */
     void sendVerifyMail(@Valid MailSendDto dto);
+
+    /**
+     * 验证并消费邮箱验证码
+     * @param email 邮箱
+     * @param code 验证码
+     */
+    void verifyAndConsumeMailCode(@Valid String email, String code);
 }
