@@ -3,6 +3,7 @@ package com.assistant.aiinterviewassistant.modules.user.controller;
 
 import com.assistant.aiinterviewassistant.common.response.R;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.LoginDto;
+import com.assistant.aiinterviewassistant.modules.user.domain.dto.MailSendDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.po.UserPo;
 import com.assistant.aiinterviewassistant.modules.user.domain.vo.LoginVo;
 import com.assistant.aiinterviewassistant.modules.user.domain.vo.UserVo;
@@ -44,6 +45,11 @@ public class AuthController {
         return R.ok(vo);
     }
 
+    /**
+     * 推出登录接口
+     * @param jwt
+     * @return 滚木
+     */
     @PostMapping("/logout")
     public R<Void> logout(@AuthenticationPrincipal Jwt jwt){
         //这个接口只有登录状态下才能进入，不需要判断sessionId或用户Id为空
