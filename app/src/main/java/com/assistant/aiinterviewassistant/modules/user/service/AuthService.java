@@ -27,5 +27,5 @@ public interface AuthService extends IService<UserPo> {
      * 发送登录验证码邮件
      * @param dto 发送邮件dto
      */
-    void sendMail(@Valid MailSendDto dto);
+    void sendVerifyMail(@Valid MailSendDto dto);
 }

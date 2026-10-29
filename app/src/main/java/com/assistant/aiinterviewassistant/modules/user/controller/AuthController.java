@@ -57,8 +57,8 @@ public class AuthController {
         return R.ok(200,"退出登录成功");
     }
     @PostMapping("/sendMail")
-    public R<Void> sendMail(@Valid @RequestParam MailSendDto dto){
-        authService.sendMail(dto);
+    public R<Void> sendMail(@Valid @RequestBody MailSendDto dto){
+        authService.sendVerifyMail(dto);
         return R.ok(200,"邮件发送成功");
     }
 }

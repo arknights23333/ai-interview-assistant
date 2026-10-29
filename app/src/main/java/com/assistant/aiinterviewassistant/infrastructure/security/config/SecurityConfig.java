@@ -48,6 +48,7 @@ public class SecurityConfig {
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         // 允许未登录用户提交账号密码；账号密码校验由登录业务调用认证管理器完成。
                         .requestMatchers(HttpMethod.POST, "/api/user/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/user/auth/sendMail").permitAll()
                         // 其他请求需要前面的 JWT 认证流程建立有效的 Authentication。
                         .anyRequest().authenticated()
                 )
