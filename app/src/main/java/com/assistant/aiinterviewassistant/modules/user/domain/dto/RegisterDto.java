@@ -15,6 +15,10 @@ public class RegisterDto {
     private String username;
     @ToString.Exclude
     @NotBlank(message = "密码不能为空")
+    @Pattern(
+            regexp = "^(?=.*[A-Za-z])(?=.*[0-9])[\\x21-\\x7E]{8,64}$",
+            message = "密码须为8～64位，至少包含字母和数字，且不能包含空格或中文"
+    )
     private String password;
     @Email(message = "邮箱格式不正确")
     @NotBlank(message = "邮箱地址不能为空")
