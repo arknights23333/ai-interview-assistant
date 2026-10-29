@@ -1,5 +1,6 @@
 package com.assistant.aiinterviewassistant.modules.user.service.impl;
 
+import com.assistant.aiinterviewassistant.common.exception.LoginErrorCode;
 import com.assistant.aiinterviewassistant.infrastructure.security.config.JwtProperties;
 import com.assistant.aiinterviewassistant.common.exception.LoginException;
 import com.assistant.aiinterviewassistant.infrastructure.redis.service.RedisService;
@@ -43,9 +44,9 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
         try {
             Authentication authResponse=authenticationManager.authenticate(authRequest);
         } catch (DisabledException e) {
-            throw new LoginException("用户已禁用");
+            throw new LoginException(LoginErrorCode.USER_DISABLED,e);
         } catch(BadCredentialsException e){
-            throw new LoginException("账号密码错误");
+            throw new LoginException(LoginErrorCode.BAD_CREDENTIAL,e);
         }
         long validitySeconds = jwtProperties.getValiditySeconds();
 

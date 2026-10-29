@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class MailServiceImpl implements MailService {
     private final MailSender mailSender;
-    private final RedisService redisService;
+
     private final MailProperties mailProperties;
     //验证码正则
     private static final String CODE_REGEX = "^[0-9]{6}$";
