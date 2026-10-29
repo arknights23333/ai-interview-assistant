@@ -5,7 +5,7 @@ import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
 /**
- * 登录时异常
+ * 登录时异常，携带具体业务码和对应的 HTTP 状态。
  */
 @Getter
 public class LoginException extends RuntimeException {
