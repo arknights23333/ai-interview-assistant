@@ -20,28 +20,17 @@ public class MailServiceImpl implements MailService {
     private final MailSender mailSender;
 
     private final MailProperties mailProperties;
-    //验证码正则
-    private static final String CODE_REGEX = "^[0-9]{6}$";
+
 
     @Override
     public void sendVerificationCodeByMail(String to, String code) {
-        if (code == null || !code.matches(CODE_REGEX)) {
-            // 验证码格式错误
-            throw new MailBusinessException(MailErrorCode.INVALID_GENERATED_CODE);
-        }
+
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(mailProperties.getUsername());
         message.setTo(to);
         message.setSubject("情趣科比，在线等你！❤❤❤");
         message.setText("您的验证码是：" + code + "，请勿泄露给他人。");
-
-        try {
-            mailSender.send(message);
-        } catch (MailException e) {
-            // 保留 SMTP 原始异常供排查，对外使用统一的业务码和提示。
-            throw new MailBusinessException(MailErrorCode.SEND_FAILED, e);
-        }
-
+        mailSender.send(message);
     }
 }
