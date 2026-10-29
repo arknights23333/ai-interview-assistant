@@ -3,6 +3,7 @@ package com.assistant.aiinterviewassistant.common.exception.handler;
 
 import com.assistant.aiinterviewassistant.common.exception.exception.LoginException;
 import com.assistant.aiinterviewassistant.common.exception.exception.MailBusinessException;
+import com.assistant.aiinterviewassistant.common.exception.exception.RegisterException;
 import com.assistant.aiinterviewassistant.common.response.R;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
@@ -32,6 +33,14 @@ public class GlobalExceotionHandler {
             log.error("邮件业务处理失败，业务码：{}", e.getCode(), e);
         }
         // ResponseEntity 设置 HTTP 状态，R.code 表达具体业务原因。
+        return ResponseEntity.status(e.getHttpStatus())
+                .body(R.<Void>fail(e.getCode(), e.getMessage()));
+    }
+    @ExceptionHandler(RegisterException.class)
+    public ResponseEntity<R<Void>> handleRegisterException(RegisterException e) {
+        if (e.getHttpStatus().is5xxServerError()) {
+            log.error("注册业务处理失败，业务码：{}", e.getCode(), e);
+        }
         return ResponseEntity.status(e.getHttpStatus())
                 .body(R.<Void>fail(e.getCode(), e.getMessage()));
     }
