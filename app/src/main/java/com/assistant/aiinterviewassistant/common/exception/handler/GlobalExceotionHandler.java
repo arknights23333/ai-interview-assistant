@@ -1,8 +1,8 @@
 package com.assistant.aiinterviewassistant.common.exception.handler;
 
 
-import com.assistant.aiinterviewassistant.common.exception.LoginException;
-import com.assistant.aiinterviewassistant.common.exception.MailBusinessException;
+import com.assistant.aiinterviewassistant.common.exception.exception.LoginException;
+import com.assistant.aiinterviewassistant.common.exception.exception.MailBusinessException;
 import com.assistant.aiinterviewassistant.common.response.R;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;

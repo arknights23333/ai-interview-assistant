@@ -1,7 +1,7 @@
 package com.assistant.aiinterviewassistant.infrastructure.mail.service.impl;
 
-import com.assistant.aiinterviewassistant.common.exception.MailBusinessException;
-import com.assistant.aiinterviewassistant.common.exception.MailErrorCode;
+import com.assistant.aiinterviewassistant.common.exception.exception.MailBusinessException;
+import com.assistant.aiinterviewassistant.common.exception.enums.MailErrorCode;
 import com.assistant.aiinterviewassistant.infrastructure.mail.service.MailService;
 import com.assistant.aiinterviewassistant.infrastructure.redis.constant.AuthRedisKeyConstant;
 import com.assistant.aiinterviewassistant.infrastructure.redis.service.RedisService;

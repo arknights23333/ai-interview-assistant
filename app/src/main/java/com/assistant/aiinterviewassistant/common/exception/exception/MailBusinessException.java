@@ -1,5 +1,6 @@
-package com.assistant.aiinterviewassistant.common.exception;
+package com.assistant.aiinterviewassistant.common.exception.exception;
 
+import com.assistant.aiinterviewassistant.common.exception.enums.MailErrorCode;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 

@@ -1,11 +1,11 @@
 package com.assistant.aiinterviewassistant.modules.user.service.impl;
 
-import com.assistant.aiinterviewassistant.common.exception.LoginErrorCode;
-import com.assistant.aiinterviewassistant.common.exception.MailBusinessException;
-import com.assistant.aiinterviewassistant.common.exception.MailErrorCode;
+import com.assistant.aiinterviewassistant.common.exception.enums.LoginErrorCode;
+import com.assistant.aiinterviewassistant.common.exception.exception.MailBusinessException;
+import com.assistant.aiinterviewassistant.common.exception.enums.MailErrorCode;
 import com.assistant.aiinterviewassistant.infrastructure.mail.service.MailService;
 import com.assistant.aiinterviewassistant.infrastructure.security.config.JwtProperties;
-import com.assistant.aiinterviewassistant.common.exception.LoginException;
+import com.assistant.aiinterviewassistant.common.exception.exception.LoginException;
 import com.assistant.aiinterviewassistant.infrastructure.redis.service.RedisService;
 import com.assistant.aiinterviewassistant.infrastructure.redis.constant.AuthRedisKeyConstant;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.LoginDto;

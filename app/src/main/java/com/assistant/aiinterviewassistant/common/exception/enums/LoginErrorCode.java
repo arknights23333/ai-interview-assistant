@@ -1,4 +1,4 @@
-package com.assistant.aiinterviewassistant.common.exception;
+package com.assistant.aiinterviewassistant.common.exception.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
