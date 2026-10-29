@@ -2,6 +2,7 @@ package com.assistant.aiinterviewassistant.modules.user.service;
 
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.LoginDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.MailSendDto;
+import com.assistant.aiinterviewassistant.modules.user.domain.dto.RegisterDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.po.UserPo;
 import com.assistant.aiinterviewassistant.modules.user.domain.vo.LoginVo;
 import com.baomidou.mybatisplus.spring.service.IService;
@@ -35,4 +36,10 @@ public interface AuthService extends IService<UserPo> {
      * @param code 验证码
      */
     void verifyAndConsumeMailCode(@Valid String email, String code);
+
+    /**
+     * 用户注册
+     * @param dto
+     */
+    void register(@Valid RegisterDto dto);
 }

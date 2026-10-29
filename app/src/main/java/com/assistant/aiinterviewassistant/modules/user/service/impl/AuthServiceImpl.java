@@ -10,6 +10,7 @@ import com.assistant.aiinterviewassistant.infrastructure.redis.service.RedisServ
 import com.assistant.aiinterviewassistant.infrastructure.redis.constant.AuthRedisKeyConstant;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.LoginDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.MailSendDto;
+import com.assistant.aiinterviewassistant.modules.user.domain.dto.RegisterDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.po.UserPo;
 import com.assistant.aiinterviewassistant.modules.user.domain.vo.LoginVo;
 import com.assistant.aiinterviewassistant.modules.user.mapper.UserMapper;
@@ -156,6 +157,11 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
         if (result == -1L) {
             throw new MailBusinessException(MailErrorCode.CODE_MISMATCH);
         }
+    }
+
+    @Override
+    public void register(RegisterDto dto) {
+
     }
 
     /**

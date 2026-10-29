@@ -4,6 +4,7 @@ package com.assistant.aiinterviewassistant.modules.user.controller;
 import com.assistant.aiinterviewassistant.common.response.R;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.LoginDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.MailSendDto;
+import com.assistant.aiinterviewassistant.modules.user.domain.dto.RegisterDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.po.UserPo;
 import com.assistant.aiinterviewassistant.modules.user.domain.vo.LoginVo;
 import com.assistant.aiinterviewassistant.modules.user.domain.vo.UserVo;
@@ -56,9 +57,20 @@ public class AuthController {
         authService.logout(Long.valueOf(jwt.getSubject()), jwt.getId());
         return R.ok(200,"退出登录成功");
     }
+
+    /**
+     * 发送邮箱验证码接口
+     * @param dto
+     * @return
+     */
     @PostMapping("/sendMail")
     public R<Void> sendMail(@Valid @RequestBody MailSendDto dto){
         authService.sendVerifyMail(dto);
         return R.ok(200,"邮件发送成功");
+    }
+    @PostMapping("/register")
+    public R<Void> register(@Valid @RequestBody RegisterDto dto){
+        authService.register(dto);
+        return R.ok(200,"注册成功");
     }
 }
