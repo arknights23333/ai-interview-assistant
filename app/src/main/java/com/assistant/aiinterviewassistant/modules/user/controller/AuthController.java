@@ -56,4 +56,9 @@ public class AuthController {
         authService.logout(Long.valueOf(jwt.getSubject()), jwt.getId());
         return R.ok(200,"退出登录成功");
     }
+    @PostMapping("/sendMail")
+    public R<Void> sendMail(@Valid @RequestParam MailSendDto dto){
+        authService.sendMail(dto);
+        return R.ok(200,"邮件发送成功");
+    }
 }

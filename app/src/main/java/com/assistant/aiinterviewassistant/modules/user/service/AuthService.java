@@ -1,9 +1,11 @@
 package com.assistant.aiinterviewassistant.modules.user.service;
 
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.LoginDto;
+import com.assistant.aiinterviewassistant.modules.user.domain.dto.MailSendDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.po.UserPo;
 import com.assistant.aiinterviewassistant.modules.user.domain.vo.LoginVo;
 import com.baomidou.mybatisplus.spring.service.IService;
+import jakarta.validation.Valid;
 
 public interface AuthService extends IService<UserPo> {
     /**
@@ -14,7 +16,16 @@ public interface AuthService extends IService<UserPo> {
     public LoginVo login(LoginDto dto);
 
     /**
-     *
+     *推出登录
+     * @param userId 用户Id（数据库唯一主键）
+     * @param sessionId 唯一会话ID
+     * returen 滚木
      */
     void logout(Long userId,String sessionId);
+
+    /**
+     * 发送登录验证码邮件
+     * @param dto 发送邮件dto
+     */
+    void sendMail(@Valid MailSendDto dto);
 }
