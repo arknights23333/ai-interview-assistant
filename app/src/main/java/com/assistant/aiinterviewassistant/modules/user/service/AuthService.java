@@ -1,5 +1,6 @@
 package com.assistant.aiinterviewassistant.modules.user.service;
 
+import com.assistant.aiinterviewassistant.modules.user.domain.dto.ChangePasswordDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.LoginDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.MailSendDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.RegisterDto;
@@ -42,4 +43,11 @@ public interface AuthService extends IService<UserPo> {
      * @param dto
      */
     void register(@Valid RegisterDto dto);
+
+    /**
+     * 在记得旧密码且已登录的情况下修改密码
+     * @param userId
+     * @param dto
+     */
+    void changePassword(Long userId, @Valid ChangePasswordDto dto);
 }

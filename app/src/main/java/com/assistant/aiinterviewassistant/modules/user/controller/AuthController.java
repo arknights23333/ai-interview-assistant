@@ -2,6 +2,7 @@ package com.assistant.aiinterviewassistant.modules.user.controller;
 
 
 import com.assistant.aiinterviewassistant.common.response.R;
+import com.assistant.aiinterviewassistant.modules.user.domain.dto.ChangePasswordDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.LoginDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.MailSendDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.RegisterDto;
@@ -61,16 +62,33 @@ public class AuthController {
     /**
      * 发送邮箱验证码接口
      * @param dto
-     * @return
+     * @return滚木
      */
     @PostMapping("/sendMail")
     public R<Void> sendMail(@Valid @RequestBody MailSendDto dto){
         authService.sendVerifyMail(dto);
         return R.ok(200,"邮件发送成功");
     }
+
+    /**
+     * 用户注册接口
+     * @param dto
+     * @return滚木
+     */
     @PostMapping("/register")
     public R<Void> register(@Valid @RequestBody RegisterDto dto){
         authService.register(dto);
         return R.ok(200,"注册成功");
+    }
+
+    /**
+     * 记得旧密码且已登录的情况下修改密码接口
+     * @param dto
+     * @return
+     */
+    @PostMapping("/changePassword")
+    public R<Void> changePassword(@AuthenticationPrincipal Jwt jwt,@Valid @RequestBody ChangePasswordDto dto){
+        authService.changePassword(Long.valueOf(jwt.getSubject()),dto);
+        return R.ok(200,"修改成功");
     }
 }

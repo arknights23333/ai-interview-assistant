@@ -11,6 +11,7 @@ import com.assistant.aiinterviewassistant.infrastructure.redis.constant.AuthRedi
 import com.assistant.aiinterviewassistant.infrastructure.redis.service.RedisService;
 import com.assistant.aiinterviewassistant.infrastructure.security.config.JwtProperties;
 import com.assistant.aiinterviewassistant.infrastructure.security.service.JwtService;
+import com.assistant.aiinterviewassistant.modules.user.domain.dto.ChangePasswordDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.LoginDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.MailSendDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.RegisterDto;
@@ -188,6 +189,12 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
         po.setAvatar(dto.getAvatar());
 
         userService.save(po);
+    }
+
+    @Override
+    public void changePassword(Long userId, ChangePasswordDto dto) {
+        UserPo user = userService.getById(userId);
+
     }
 
     /**
