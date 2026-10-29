@@ -1,18 +1,11 @@
 package com.assistant.aiinterviewassistant.infrastructure.mail.service.impl;
 
-import com.assistant.aiinterviewassistant.common.exception.exception.MailBusinessException;
-import com.assistant.aiinterviewassistant.common.exception.enums.MailErrorCode;
 import com.assistant.aiinterviewassistant.infrastructure.mail.service.MailService;
-import com.assistant.aiinterviewassistant.infrastructure.redis.constant.AuthRedisKeyConstant;
-import com.assistant.aiinterviewassistant.infrastructure.redis.service.RedisService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.mail.autoconfigure.MailProperties;
-import org.springframework.mail.MailException;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.stereotype.Service;
-
-import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
