@@ -1,6 +1,7 @@
 package com.assistant.aiinterviewassistant.modules.user.domain.dto;
 
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -11,6 +12,7 @@ import lombok.ToString;
  */
 @Data
 public class RegisterDto {
+    @Size(max = 64, message = "用户名不能超过64个字符")
     @NotBlank(message = "用户名不能为空")
     private String username;
     @ToString.Exclude
@@ -22,6 +24,7 @@ public class RegisterDto {
     private String password;
     @Email(message = "邮箱格式不正确")
     @NotBlank(message = "邮箱地址不能为空")
+    @Size(max = 256, message = "邮箱地址不能超过256个字符")
     private String email;
     @Pattern(
             regexp = "^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6}$",
@@ -29,6 +32,8 @@ public class RegisterDto {
     )
     @NotBlank(message = "验证码不能为空")
     private String code;
+    @Size(max = 64, message = "昵称不能超过64个字符")
     private String nickname;
+    @Size(max = 1024, message = "头像地址不能超过1024个字符")
     private String avatar;
 }
