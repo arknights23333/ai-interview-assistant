@@ -1,13 +1,16 @@
 package com.assistant.aiinterviewassistant.modules.user.service.impl;
 
 import com.assistant.aiinterviewassistant.common.exception.enums.LoginErrorCode;
-import com.assistant.aiinterviewassistant.common.exception.exception.MailBusinessException;
 import com.assistant.aiinterviewassistant.common.exception.enums.MailErrorCode;
-import com.assistant.aiinterviewassistant.infrastructure.mail.service.MailService;
-import com.assistant.aiinterviewassistant.infrastructure.security.config.JwtProperties;
+import com.assistant.aiinterviewassistant.common.exception.enums.RegisterErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.exception.LoginException;
-import com.assistant.aiinterviewassistant.infrastructure.redis.service.RedisService;
+import com.assistant.aiinterviewassistant.common.exception.exception.MailBusinessException;
+import com.assistant.aiinterviewassistant.common.exception.exception.RegisterException;
+import com.assistant.aiinterviewassistant.infrastructure.mail.service.MailService;
 import com.assistant.aiinterviewassistant.infrastructure.redis.constant.AuthRedisKeyConstant;
+import com.assistant.aiinterviewassistant.infrastructure.redis.service.RedisService;
+import com.assistant.aiinterviewassistant.infrastructure.security.config.JwtProperties;
+import com.assistant.aiinterviewassistant.infrastructure.security.service.JwtService;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.LoginDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.MailSendDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.RegisterDto;
@@ -15,17 +18,18 @@ import com.assistant.aiinterviewassistant.modules.user.domain.po.UserPo;
 import com.assistant.aiinterviewassistant.modules.user.domain.vo.LoginVo;
 import com.assistant.aiinterviewassistant.modules.user.mapper.UserMapper;
 import com.assistant.aiinterviewassistant.modules.user.service.AuthService;
-import com.assistant.aiinterviewassistant.infrastructure.security.service.JwtService;
 import com.assistant.aiinterviewassistant.modules.user.service.UserService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.MailException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
-import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Service;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.util.List;
@@ -47,6 +51,8 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
     private final JwtProperties jwtProperties;
 
     private final MailService mailService;
+
+    private final PasswordEncoder passwordEncoder;
 
     /** 验证码字符集：去掉易混淆的 0/O、1/I/L，共 31 个字符。 */
     private static final String CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
@@ -161,7 +167,27 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
 
     @Override
     public void register(RegisterDto dto) {
+        if(userService.getOne(new LambdaQueryWrapper<UserPo>().eq(UserPo::getUsername, dto.getUsername())) != null){
+            throw new RegisterException(RegisterErrorCode.USERNAME_ALREADY_EXISTS);
+        }
+        if(userService.getOne(new LambdaQueryWrapper<UserPo>().eq(UserPo::getEmail, dto.getEmail())) != null){
+            throw new RegisterException(RegisterErrorCode.EMAIL_ALREADY_BOUND);
+        }
+        verifyAndConsumeMailCode(dto.getEmail(), dto.getCode());
 
+        String encodedPassword = passwordEncoder.encode(dto.getPassword());
+
+        UserPo po =new UserPo();
+        po.setUsername(dto.getUsername());
+        po.setPasswordHash(encodedPassword);
+        po.setEmail(dto.getEmail());
+        if(dto.getNickname() != null && !dto.getNickname().isEmpty()){
+            po.setNickname(dto.getNickname());
+        }
+        if(dto.getAvatar() != null && !dto.getAvatar().isEmpty())
+        po.setAvatar(dto.getAvatar());
+
+        userService.save(po);
     }
 
     /**
