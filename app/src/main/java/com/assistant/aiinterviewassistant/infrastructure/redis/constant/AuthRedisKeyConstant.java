@@ -11,6 +11,11 @@ public class AuthRedisKeyConstant {
      * <p>格式：auth:mail:code:email</p>
      */
     public static final String AUTH_MAIL_CODE_KEY = "auth:mail:code:";
+    /**
+     * 用与在redis维护邮箱发送频率限制的键
+     * <P>格式 auth:login:limit:email</P>
+     */
+    public static final String AUTH_MAIL_LIMIT_KEY= "auth:mail:limit";
     private AuthRedisKeyConstant() {
     }
 }
