@@ -17,6 +17,7 @@ import com.assistant.aiinterviewassistant.modules.user.domain.dto.ChangePassword
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.LoginDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.MailSendDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.RegisterDto;
+import com.assistant.aiinterviewassistant.modules.user.domain.enums.MailCodeScene;
 import com.assistant.aiinterviewassistant.modules.user.domain.po.UserPo;
 import com.assistant.aiinterviewassistant.modules.user.domain.vo.LoginVo;
 import com.assistant.aiinterviewassistant.modules.user.mapper.UserMapper;
@@ -98,7 +99,8 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
 
     @Override
     public void sendVerifyMail(MailSendDto dto) {
-
+        String codeKey = resolveMailCodeKeyPrefix(dto.getScene()) + dto.getEmail();
+        String limitKey = AuthRedisKeyConstant.AUTH_MAIL_LIMIT_KEY + dto.getEmail();
         String code=generateVerificationCode();
         if (code == null || !code.matches(CODE_REGEX)) {
             // 验证码格式错误
@@ -114,7 +116,7 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
                 """;
         Long result=redisService.executeScript(script,
                                    Long.class,
-                                   List.of(AuthRedisKeyConstant.AUTH_MAIL_CODE_KEY+dto.getEmail(),AuthRedisKeyConstant.AUTH_MAIL_LIMIT_KEY+dto.getEmail()),
+                                   List.of(codeKey, limitKey),
                                    code,
                                    120L,
                                    60L);
@@ -127,7 +129,7 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
                 mailService.sendVerificationCodeByMail(dto.getEmail(), code);
         } catch (MailException e){
                 try{
-                    redisService.deleteIfValueMatches(AuthRedisKeyConstant.AUTH_MAIL_CODE_KEY+dto.getEmail(), code);
+                    redisService.deleteIfValueMatches(codeKey, code);
                 }catch (RuntimeException cleanupException){
                     // 清理失败也保留排查信息，不覆盖原始发送异常。
                     e.addSuppressed(cleanupException);
@@ -138,7 +140,7 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
     }
 
     @Override
-    public void verifyAndConsumeMailCode(String email, String code) {
+    public void verifyAndConsumeMailCode(String keyPrefix, String email, String code) {
         String script= """
                 local cacheCode = redis.call('get',KEYS[1])
                 
@@ -155,7 +157,7 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
         Long result=redisService.executeScript(
                 script,
                 Long.class,
-                List.of(AuthRedisKeyConstant.AUTH_MAIL_CODE_KEY+email),
+                List.of(keyPrefix + email),
                 code
         );
         if (result == null) {
@@ -177,7 +179,11 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
         if(userService.getOne(new LambdaQueryWrapper<UserPo>().eq(UserPo::getEmail, dto.getEmail())) != null){
             throw new RegisterException(RegisterErrorCode.EMAIL_ALREADY_BOUND);
         }
-        verifyAndConsumeMailCode(dto.getEmail(), dto.getCode());
+        verifyAndConsumeMailCode(
+                AuthRedisKeyConstant.REGISTER_MAIL_CODE_KEY,
+                dto.getEmail(),
+                dto.getCode()
+        );
 
         String encodedPassword = passwordEncoder.encode(dto.getPassword());
 
@@ -203,7 +209,11 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
                 throw new PasswordException(PasswordErrorCode.OLD_PASSWORD_MIS_MATCH);
             }
         } else if (StringUtils.hasText(dto.getCode())) {
-            verifyAndConsumeMailCode(user.getEmail(), dto.getCode());
+            verifyAndConsumeMailCode(
+                    AuthRedisKeyConstant.CHANGE_PASSWORD_MAIL_CODE_KEY,
+                    user.getEmail(),
+                    dto.getCode()
+            );
         } else {
             throw new PasswordException(PasswordErrorCode.VERIFICATION_REQUIRED);
         }
@@ -217,6 +227,15 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
 
         redisService.deleteObject(AuthRedisKeyConstant.AUTH_LOGIN_KEY + userId);
 
+    }
+
+    /** 将业务用途映射为服务端固定的 Redis 前缀。 */
+    private String resolveMailCodeKeyPrefix(MailCodeScene scene) {
+        return switch (scene) {
+            case REGISTER -> AuthRedisKeyConstant.REGISTER_MAIL_CODE_KEY;
+            case RESET_PASSWORD -> AuthRedisKeyConstant.RESET_PASSWORD_MAIL_CODE_KEY;
+            case CHANGE_PASSWORD -> AuthRedisKeyConstant.CHANGE_PASSWORD_MAIL_CODE_KEY;
+        };
     }
 
     /**

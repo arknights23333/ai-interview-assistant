@@ -9,6 +9,7 @@ import com.assistant.aiinterviewassistant.common.response.R;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -64,6 +65,13 @@ public class GlobalExceotionHandler {
         return ResponseEntity.badRequest()
                 .body(R.<Void>fail(40000, message));
     }
+    /** 包括验证码用途不在枚举范围内等请求体解析失败。 */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<R<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        return ResponseEntity.badRequest()
+                .body(R.<Void>fail(40000, "请求体格式或字段值不正确"));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<R<Void>> handleException(Exception e) {
         log.error("请求处理发生未预期异常", e);

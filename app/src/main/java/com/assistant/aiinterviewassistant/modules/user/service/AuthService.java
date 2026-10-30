@@ -26,17 +26,18 @@ public interface AuthService extends IService<UserPo> {
     void logout(Long userId,String sessionId);
 
     /**
-     * 发送登录验证码邮件
+     * 按指定用途发送邮箱验证码，同一邮箱共享发送间隔。
      * @param dto 发送邮件dto
      */
     void sendVerifyMail(@Valid MailSendDto dto);
 
     /**
-     * 验证并消费邮箱验证码
+     * 原子地校验并消费指定用途的邮箱验证码。
+     * @param keyPrefix 验证码用途前缀，由服务端业务固定指定，不接受前端传入
      * @param email 邮箱
      * @param code 验证码
      */
-    void verifyAndConsumeMailCode(@Valid String email, String code);
+    void verifyAndConsumeMailCode(String keyPrefix, String email, String code);
 
     /**
      * 用户注册
@@ -45,7 +46,7 @@ public interface AuthService extends IService<UserPo> {
     void register(@Valid RegisterDto dto);
 
     /**
-     * 在记得旧密码且已登录的情况下修改密码
+     * 已登录用户通过旧密码或当前绑定邮箱的验证码修改密码。
      * @param userId
      * @param dto
      */
