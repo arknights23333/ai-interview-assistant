@@ -149,6 +149,11 @@ class BusinessExceptionContractTests {
         }
     }
 
+    /**
+     * 仅供业务异常响应回归测试使用，不同步到 Apifox。
+     *
+     * @ignore
+     */
     @RestController
     static class BusinessErrorController {
         private final BusinessErrorCode error;
@@ -157,22 +162,47 @@ class BusinessExceptionContractTests {
             this.error = error;
         }
 
+        /**
+         * 仅用于自动化测试，不导出为 Apifox 接口。
+         *
+         * @ignore
+         */
         @GetMapping("/test/business")
         public void fail() {
             throw new BusinessException(error, new IllegalStateException("内部连接信息不得返回"));
         }
     }
 
+    /**
+     * 仅供参数校验和异常兜底测试使用，不同步到 Apifox。
+     *
+     * @ignore
+     */
     @RestController
     static class InputController {
+        /**
+         * 仅用于自动化测试，不导出为 Apifox 接口。
+         *
+         * @ignore
+         */
         @PostMapping("/test/input")
         public void input(@Valid @RequestBody Input input) {
         }
 
+        /**
+         * 仅用于自动化测试，不导出为 Apifox 接口。
+         *
+         * @ignore
+         */
         @PostMapping("/test/mail")
         public void mail(@Valid @RequestBody MailSendDto dto) {
         }
 
+        /**
+         * 仅用于自动化测试，不导出为 Apifox 接口。
+         *
+         * @ignore
+         */
         @GetMapping("/test/unexpected")
         public void unexpected() {
             throw new IllegalStateException("内部数据库连接信息不得返回");

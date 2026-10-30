@@ -141,13 +141,28 @@ class SecurityErrorResponseTests {
         }
     }
 
+    /**
+     * 仅供 SC 过滤链响应测试使用，不同步到 Apifox。
+     *
+     * @ignore
+     */
     @RestController
     static class ErrorController {
+        /**
+         * 仅用于自动化测试，不导出为 Apifox 接口。
+         *
+         * @ignore
+         */
         @GetMapping("/test/protected")
         public void protectedResource() {
             throw new BusinessException(UserErrorCode.USER_NOT_FOUND);
         }
 
+        /**
+         * 仅用于自动化测试，不导出为 Apifox 接口。
+         *
+         * @ignore
+         */
         @PostMapping("/api/user/auth/login")
         public void login() {
             throw new BusinessException(LoginErrorCode.BAD_CREDENTIAL);
