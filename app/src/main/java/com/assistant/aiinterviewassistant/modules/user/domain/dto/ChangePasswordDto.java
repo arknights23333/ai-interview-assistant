@@ -8,6 +8,14 @@ import lombok.ToString;
 @Data
 public class ChangePasswordDto {
     private String oldPassword;
+    /**
+     * 邮箱验证码
+     */
+    @NotBlank(message = "验证码不能为空")
+    @Pattern(
+            regexp = "^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6}$",
+            message = "验证码格式不正确"
+    )
     private String code;
     @ToString.Exclude
     @NotBlank(message = "新密码不能为空")
