@@ -1,6 +1,7 @@
 package com.assistant.aiinterviewassistant.modules.user.service;
 
 import com.assistant.aiinterviewassistant.modules.user.domain.po.UserPo;
+import com.assistant.aiinterviewassistant.modules.user.domain.vo.UserVo;
 import com.baomidou.mybatisplus.spring.service.IService;
 import org.apache.ibatis.annotations.Param;
 
@@ -18,4 +19,10 @@ public interface UserService extends IService<UserPo> {
      * @return 包含密码摘要的用户信息；账号不存在时返回 {@code null}
      */
     UserPo getUserByUsername(String username);
+
+    /** 根据当前用户 ID 获取个人信息。 */
+    UserVo getCurrentUser(Long userId);
+
+    /** 更新当前用户的昵称。 */
+    void updateNickname(Long userId, String nickname);
 }
