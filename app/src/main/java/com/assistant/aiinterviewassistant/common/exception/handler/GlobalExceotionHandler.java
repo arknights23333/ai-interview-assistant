@@ -3,6 +3,7 @@ package com.assistant.aiinterviewassistant.common.exception.handler;
 
 import com.assistant.aiinterviewassistant.common.exception.exception.LoginException;
 import com.assistant.aiinterviewassistant.common.exception.exception.MailBusinessException;
+import com.assistant.aiinterviewassistant.common.exception.exception.PasswordException;
 import com.assistant.aiinterviewassistant.common.exception.exception.RegisterException;
 import com.assistant.aiinterviewassistant.common.response.R;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +41,14 @@ public class GlobalExceotionHandler {
     public ResponseEntity<R<Void>> handleRegisterException(RegisterException e) {
         if (e.getHttpStatus().is5xxServerError()) {
             log.error("注册业务处理失败，业务码：{}", e.getCode(), e);
+        }
+        return ResponseEntity.status(e.getHttpStatus())
+                .body(R.<Void>fail(e.getCode(), e.getMessage()));
+    }
+    @ExceptionHandler(PasswordException.class)
+    public ResponseEntity<R<Void>> handlePasswordException(PasswordException e) {
+        if (e.getHttpStatus().is5xxServerError()) {
+            log.error("密码业务处理失败，业务码：{}", e.getCode(), e);
         }
         return ResponseEntity.status(e.getHttpStatus())
                 .body(R.<Void>fail(e.getCode(), e.getMessage()));
