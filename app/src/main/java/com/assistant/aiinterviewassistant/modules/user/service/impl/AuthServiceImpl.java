@@ -203,6 +203,9 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
     @Override
     public void changePassword(Long userId, ChangePasswordDto dto) {
         UserPo user = userService.getById(userId);
+        if (user == null) {
+            throw new UserException(UserErrorCode.USER_NOT_FOUND);
+        }
         // 优先验证旧密码；未提供旧密码时，验证当前绑定邮箱的验证码。
         if (StringUtils.hasText(dto.getOldPassword())) {
             if (!passwordEncoder.matches(dto.getOldPassword(), user.getPasswordHash())) {

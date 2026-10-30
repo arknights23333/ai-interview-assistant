@@ -5,6 +5,7 @@ import com.assistant.aiinterviewassistant.common.exception.exception.LoginExcept
 import com.assistant.aiinterviewassistant.common.exception.exception.MailBusinessException;
 import com.assistant.aiinterviewassistant.common.exception.exception.PasswordException;
 import com.assistant.aiinterviewassistant.common.exception.exception.RegisterException;
+import com.assistant.aiinterviewassistant.common.exception.exception.UserException;
 import com.assistant.aiinterviewassistant.common.response.R;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
@@ -54,6 +55,15 @@ public class GlobalExceotionHandler {
         return ResponseEntity.status(e.getHttpStatus())
                 .body(R.<Void>fail(e.getCode(), e.getMessage()));
     }
+    @ExceptionHandler(UserException.class)
+    public ResponseEntity<R<Void>> handleUserException(UserException e) {
+        if (e.getHttpStatus().is5xxServerError()) {
+            log.error("用户业务处理失败，业务码：{}", e.getCode(), e);
+        }
+        return ResponseEntity.status(e.getHttpStatus())
+                .body(R.<Void>fail(e.getCode(), e.getMessage()));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<R<Void>> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
         String message = e.getBindingResult()

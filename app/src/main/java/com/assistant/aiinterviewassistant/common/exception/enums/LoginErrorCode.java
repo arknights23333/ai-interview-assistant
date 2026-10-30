@@ -16,11 +16,6 @@ public enum LoginErrorCode {
             HttpStatus.UNAUTHORIZED,
             "账号或密码错误"
             ),
-    USER_DISABLED(
-            40102,
-            HttpStatus.UNAUTHORIZED,
-            "账号已禁用"
-            ),
     LOGIN_FAILED(
             50003,
             HttpStatus.INTERNAL_SERVER_ERROR,
