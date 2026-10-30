@@ -37,6 +37,7 @@ import org.springframework.util.StringUtils;
 
 import java.security.SecureRandom;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -102,8 +103,9 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
 
     @Override
     public void sendVerifyMail(MailSendDto dto) {
-        String codeKey = resolveMailCodeKeyPrefix(dto.getScene()) + dto.getEmail();
-        String limitKey = AuthRedisKeyConstant.AUTH_MAIL_LIMIT_KEY + dto.getEmail();
+        String email = normalizeMailAddress(dto.getEmail());
+        String codeKey = resolveMailCodeKeyPrefix(dto.getScene()) + email;
+        String limitKey = AuthRedisKeyConstant.AUTH_MAIL_LIMIT_KEY + email;
         String code=generateVerificationCode();
         if (code == null || !code.matches(CODE_REGEX)) {
             // 验证码格式错误
@@ -160,7 +162,7 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
         Long result=redisService.executeScript(
                 script,
                 Long.class,
-                List.of(keyPrefix + email),
+                List.of(keyPrefix + normalizeMailAddress(email)),
                 code
         );
         if (result == null) {
@@ -176,15 +178,16 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
 
     @Override
     public void register(RegisterDto dto) {
+        String email = normalizeMailAddress(dto.getEmail());
         if(userService.getOne(new LambdaQueryWrapper<UserPo>().eq(UserPo::getUsername, dto.getUsername())) != null){
             throw new BusinessException(RegisterErrorCode.USERNAME_ALREADY_EXISTS);
         }
-        if(userService.getOne(new LambdaQueryWrapper<UserPo>().eq(UserPo::getEmail, dto.getEmail())) != null){
+        if(userService.getOne(new LambdaQueryWrapper<UserPo>().eq(UserPo::getEmail, email)) != null){
             throw new BusinessException(RegisterErrorCode.EMAIL_ALREADY_BOUND);
         }
         verifyAndConsumeMailCode(
                 AuthRedisKeyConstant.REGISTER_MAIL_CODE_KEY,
-                dto.getEmail(),
+                email,
                 dto.getCode()
         );
 
@@ -193,7 +196,7 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
         UserPo po =new UserPo();
         po.setUsername(dto.getUsername());
         po.setPasswordHash(encodedPassword);
-        po.setEmail(dto.getEmail());
+        po.setEmail(email);
         if(dto.getNickname() != null && !dto.getNickname().isEmpty()){
             po.setNickname(dto.getNickname());
         }
@@ -233,6 +236,16 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
 
         redisService.deleteObject(AuthRedisKeyConstant.AUTH_LOGIN_KEY + userId);
 
+    }
+
+    /** 保留邮箱本地部分的大小写，仅将最后一个 @ 后的域名转为小写。 */
+    private String normalizeMailAddress(String email) {
+        int separator = email.lastIndexOf('@');
+        if (separator <= 0 || separator == email.length() - 1) {
+            throw new IllegalArgumentException("邮箱地址缺少有效的本地部分或域名");
+        }
+        return email.substring(0, separator + 1)
+                + email.substring(separator + 1).toLowerCase(Locale.ROOT);
     }
 
     /** 将业务用途映射为服务端固定的 Redis 前缀。 */

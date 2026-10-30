@@ -25,7 +25,7 @@ public class UserPo {
   /** 登录账号，唯一，区分大小写。 */
   private String username;
 
-  /** 已验证邮箱，唯一性不区分大小写。 */
+  /** 已验证邮箱，本地部分区分大小写，域名统一小写。 */
   private String email;
 
   /** BCrypt 密码摘要，不存储明文密码。 */
