@@ -12,10 +12,7 @@ import com.assistant.aiinterviewassistant.infrastructure.redis.constant.AuthRedi
 import com.assistant.aiinterviewassistant.infrastructure.redis.service.RedisService;
 import com.assistant.aiinterviewassistant.infrastructure.security.config.JwtProperties;
 import com.assistant.aiinterviewassistant.infrastructure.security.service.JwtService;
-import com.assistant.aiinterviewassistant.modules.user.domain.dto.ChangePasswordDto;
-import com.assistant.aiinterviewassistant.modules.user.domain.dto.LoginDto;
-import com.assistant.aiinterviewassistant.modules.user.domain.dto.MailSendDto;
-import com.assistant.aiinterviewassistant.modules.user.domain.dto.RegisterDto;
+import com.assistant.aiinterviewassistant.modules.user.domain.dto.*;
 import com.assistant.aiinterviewassistant.modules.user.domain.enums.MailCodeScene;
 import com.assistant.aiinterviewassistant.modules.user.domain.po.UserPo;
 import com.assistant.aiinterviewassistant.modules.user.domain.vo.LoginVo;
@@ -235,6 +232,40 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
         }
 
         redisService.deleteObject(AuthRedisKeyConstant.AUTH_LOGIN_KEY + userId);
+
+    }
+
+    @Override
+    public void resetPassword(ResetPasswordDto dto) {
+        UserPo user = userService.getOne(new LambdaQueryWrapper<UserPo>().eq(UserPo::getUsername, dto.getUsername()));
+        if (user == null || !normalizeMailAddress(user.getEmail()).equals(normalizeMailAddress(dto.getEmail()))) {
+            throw new BusinessException(PasswordErrorCode.PASSWORD_RESET_VERIFICATION_FAILD);
+        }
+
+        try {
+            verifyAndConsumeMailCode(AuthRedisKeyConstant.RESET_PASSWORD_MAIL_CODE_KEY, user.getEmail(), dto.getCode());
+        } catch (BusinessException e) {
+            // 仅统一验证码错误和过期的对外提示，其他业务错误与系统故障继续抛出。
+            if (e.getCode() == MailErrorCode.CODE_MISMATCH.getCode()
+                    || e.getCode() == MailErrorCode.CODE_EXPIRED.getCode()) {
+                throw new BusinessException(PasswordErrorCode.PASSWORD_RESET_VERIFICATION_FAILD, e);
+            }
+            throw e;
+        }
+
+        if(passwordEncoder.matches(dto.getNewPassword(),user.getPasswordHash())){
+            throw new BusinessException(PasswordErrorCode.NEW_PASSWORD_SAME_AS_OLD);
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(dto.getNewPassword()));
+
+        if (!userService.updateById(user)) {
+            throw new BusinessException(PasswordErrorCode.PASSWORD_RESET_FAILED);
+        }
+
+        redisService.deleteObject(
+                AuthRedisKeyConstant.AUTH_LOGIN_KEY + user.getId()
+        );
 
     }
 

@@ -1,9 +1,6 @@
 package com.assistant.aiinterviewassistant.modules.user.service;
 
-import com.assistant.aiinterviewassistant.modules.user.domain.dto.ChangePasswordDto;
-import com.assistant.aiinterviewassistant.modules.user.domain.dto.LoginDto;
-import com.assistant.aiinterviewassistant.modules.user.domain.dto.MailSendDto;
-import com.assistant.aiinterviewassistant.modules.user.domain.dto.RegisterDto;
+import com.assistant.aiinterviewassistant.modules.user.domain.dto.*;
 import com.assistant.aiinterviewassistant.modules.user.domain.po.UserPo;
 import com.assistant.aiinterviewassistant.modules.user.domain.vo.LoginVo;
 import com.baomidou.mybatisplus.spring.service.IService;
@@ -51,4 +48,10 @@ public interface AuthService extends IService<UserPo> {
      * @param dto
      */
     void changePassword(Long userId, @Valid ChangePasswordDto dto);
+
+    /**
+     * 未登录用户通过邮箱重置密码
+     * @param dto
+     */
+    void resetPassword(@Valid ResetPasswordDto dto);
 }

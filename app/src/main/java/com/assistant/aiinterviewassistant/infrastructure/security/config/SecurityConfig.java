@@ -50,6 +50,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/user/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/user/auth/sendMail").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/user/auth/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/user/auth/resetPassword").permitAll()
                         // 其他请求需要前面的 JWT 认证流程建立有效的 Authentication。
                         .anyRequest().authenticated()
                 )

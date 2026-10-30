@@ -29,6 +29,11 @@ public enum PasswordErrorCode implements BusinessErrorCode {
             HttpStatus.BAD_REQUEST,
             "请提供旧密码或邮箱验证码"
     ),
+    PASSWORD_RESET_VERIFICATION_FAILD(
+            40007,
+            HttpStatus.BAD_REQUEST,
+            "账号、邮箱或验证码不正确"
+    ),
     //密码重置过程中发生内部错误
     PASSWORD_RESET_FAILED(
             50005,

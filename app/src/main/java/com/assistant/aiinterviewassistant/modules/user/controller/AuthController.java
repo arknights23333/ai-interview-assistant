@@ -5,10 +5,7 @@ import com.assistant.aiinterviewassistant.common.exception.exception.BusinessExc
 
 import com.assistant.aiinterviewassistant.common.exception.enums.UserErrorCode;
 import com.assistant.aiinterviewassistant.common.response.R;
-import com.assistant.aiinterviewassistant.modules.user.domain.dto.ChangePasswordDto;
-import com.assistant.aiinterviewassistant.modules.user.domain.dto.LoginDto;
-import com.assistant.aiinterviewassistant.modules.user.domain.dto.MailSendDto;
-import com.assistant.aiinterviewassistant.modules.user.domain.dto.RegisterDto;
+import com.assistant.aiinterviewassistant.modules.user.domain.dto.*;
 import com.assistant.aiinterviewassistant.modules.user.domain.po.UserPo;
 import com.assistant.aiinterviewassistant.modules.user.domain.vo.LoginVo;
 import com.assistant.aiinterviewassistant.modules.user.domain.vo.UserVo;
@@ -21,6 +18,11 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 用户认证接口。
+ *
+ * @folder 用户认证
+ */
 @RestController
 @RequestMapping("/api/user/auth")
 @RequiredArgsConstructor
@@ -96,5 +98,15 @@ public class AuthController {
     public R<Void> changePassword(@AuthenticationPrincipal Jwt jwt,@Valid @RequestBody ChangePasswordDto dto){
         authService.changePassword(Long.valueOf(jwt.getSubject()),dto);
         return R.ok(200,"修改成功");
+    }
+    /**
+     * 不记得旧密码且未登录的情况下修改密码接口
+     * @param dto
+     * @return滚木
+     */
+    @PostMapping("resetPassword")
+    public R<Void> resetPassword(@Valid @RequestBody ResetPasswordDto dto){
+        authService.resetPassword(dto);
+        return R.ok(200,"重置成功");
     }
 }
