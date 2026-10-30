@@ -35,7 +35,7 @@ SC 过滤层认证失败继续由 RestAuthenticationEntryPoint 返回 HTTP 401 /
 
 本次回归用例不启动数据库、Redis 或 SMTP，也不读取真实登录会话：
 
-- BusinessExceptionContractTests：固定现有 17 个业务错误的 HTTP 状态、业务码和提示，验证统一响应、cause 保留、参数校验和安全兜底。
+- BusinessExceptionContractTests：固定现有 21 个业务错误的 HTTP 状态、业务码和提示，验证统一响应、cause 保留、参数校验和安全兜底。
 - AuthServiceExceptionTests：使用 Mockito 验证登录失败、用户不存在、验证码失败、重复注册、密码更新失败与成功顺序、邮件失败及清理失败的异常链。
 - SecurityErrorResponseTests：加载真实 SecurityConfig 和 EntryPoint，替换外部令牌解码依赖，验证无 Token、无 Bearer 前缀、无效 Token、认证后业务失败及公开登录入口。
 

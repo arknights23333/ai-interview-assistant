@@ -197,7 +197,7 @@ class AuthServiceExceptionTests {
     void duplicateEmail() {
         when(userService.getOne(any())).thenReturn(null, user());
         BusinessException exception = assertThrows(BusinessException.class, () -> service.register(new RegisterDto()));
-        assertEquals(RegisterErrorCode.EMAIL_ALREADY_BOUND.getCode(), exception.getCode());
+        assertEquals(MailErrorCode.EMAIL_ALREADY_BOUND.getCode(), exception.getCode());
         verifyNoInteractions(redisService, passwordEncoder);
     }
 

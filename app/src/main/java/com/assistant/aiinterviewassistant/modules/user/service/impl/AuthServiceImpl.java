@@ -180,7 +180,7 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
             throw new BusinessException(RegisterErrorCode.USERNAME_ALREADY_EXISTS);
         }
         if(userService.getOne(new LambdaQueryWrapper<UserPo>().eq(UserPo::getEmail, email)) != null){
-            throw new BusinessException(RegisterErrorCode.EMAIL_ALREADY_BOUND);
+            throw new BusinessException(MailErrorCode.EMAIL_ALREADY_BOUND);
         }
         verifyAndConsumeMailCode(
                 AuthRedisKeyConstant.REGISTER_MAIL_CODE_KEY,
