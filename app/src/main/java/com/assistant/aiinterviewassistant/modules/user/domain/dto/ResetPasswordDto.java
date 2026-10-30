@@ -3,6 +3,7 @@ package com.assistant.aiinterviewassistant.modules.user.domain.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.ToString;
 
@@ -11,6 +12,12 @@ import lombok.ToString;
  */
 @Data
 public class ResetPasswordDto {
+    /**
+     * 用户账号
+     */
+    @Size(max=64,message="账号长度不能超过64个字符")
+    @NotBlank(message = "账号不能为空")
+    private String username;
     /**
      * 邮箱地址
      */

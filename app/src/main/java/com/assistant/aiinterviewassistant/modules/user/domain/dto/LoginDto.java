@@ -1,6 +1,7 @@
 package com.assistant.aiinterviewassistant.modules.user.domain.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.ToString;
 
@@ -11,6 +12,7 @@ import lombok.ToString;
 public class LoginDto {
 
     /** 登录账号。 */
+    @Size(max=64,message="账号长度不能超过64个字符")
     @NotBlank(message = "账号不能为空")
     private String username;
 
