@@ -17,7 +17,7 @@ public class MailSendDto {
     @NotBlank(message = "邮箱地址不能为空")
     private String email;
 
-    /** 验证码用途：REGISTER、RESET_PASSWORD 或 CHANGE_PASSWORD。 */
+    /** 验证码用途：REGISTER、RESET_PASSWORD、CHANGE_PASSWORD 或 CHANGE_EMAIL。 */
     @NotNull(message = "请选择验证码用途")
     private MailCodeScene scene;
 }

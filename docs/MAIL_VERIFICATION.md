@@ -18,6 +18,7 @@
 | REGISTER | 注册 | auth:mail:code:register: |
 | RESET_PASSWORD | 忘记密码后重置密码 | auth:mail:code:reset-password: |
 | CHANGE_PASSWORD | 已登录后通过邮箱验证码修改密码 | auth:mail:code:change-password: |
+| CHANGE_EMAIL | 已登录后改绑邮箱 | auth:mail:code:change-email: |
 
 实际验证码键由前缀与规范化后的邮箱拼接。邮箱规范化仅将最后一个 `@` 后的域名转为小写，保留本地部分的大小写；发送、消费、绑定比较和注册存储使用同一规则。限流键也使用规范化邮箱。前端只能选择用途，不能提交 Redis 键或前缀。注册、修改密码等业务消费验证码时使用服务端固定前缀，不从请求中决定消费用途。
 
