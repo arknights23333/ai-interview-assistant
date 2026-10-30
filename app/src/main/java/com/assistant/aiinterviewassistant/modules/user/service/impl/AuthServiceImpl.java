@@ -2,9 +2,11 @@ package com.assistant.aiinterviewassistant.modules.user.service.impl;
 
 import com.assistant.aiinterviewassistant.common.exception.enums.LoginErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.enums.MailErrorCode;
+import com.assistant.aiinterviewassistant.common.exception.enums.PasswordErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.enums.RegisterErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.exception.LoginException;
 import com.assistant.aiinterviewassistant.common.exception.exception.MailBusinessException;
+import com.assistant.aiinterviewassistant.common.exception.exception.PasswordException;
 import com.assistant.aiinterviewassistant.common.exception.exception.RegisterException;
 import com.assistant.aiinterviewassistant.infrastructure.mail.service.MailService;
 import com.assistant.aiinterviewassistant.infrastructure.redis.constant.AuthRedisKeyConstant;
@@ -31,6 +33,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.security.SecureRandom;
 import java.util.List;
@@ -194,6 +197,25 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
     @Override
     public void changePassword(Long userId, ChangePasswordDto dto) {
         UserPo user = userService.getById(userId);
+        // 优先验证旧密码；未提供旧密码时，验证当前绑定邮箱的验证码。
+        if (StringUtils.hasText(dto.getOldPassword())) {
+            if (!passwordEncoder.matches(dto.getOldPassword(), user.getPasswordHash())) {
+                throw new PasswordException(PasswordErrorCode.OLD_PASSWORD_MIS_MATCH);
+            }
+        } else if (StringUtils.hasText(dto.getCode())) {
+            verifyAndConsumeMailCode(user.getEmail(), dto.getCode());
+        } else {
+            throw new PasswordException(PasswordErrorCode.VERIFICATION_REQUIRED);
+        }
+        if (passwordEncoder.matches(dto.getNewPassword(), user.getPasswordHash())) {
+            throw new PasswordException(PasswordErrorCode.NEW_PASSWORD_SAME_AS_OLD);
+        }
+        user.setPasswordHash(passwordEncoder.encode(dto.getNewPassword()));
+        if (!userService.updateById(user)) {
+            throw new PasswordException(PasswordErrorCode.PASSWORD_RESET_FAILED);
+        }
+
+        redisService.deleteObject(AuthRedisKeyConstant.AUTH_LOGIN_KEY + userId);
 
     }
 

@@ -2,8 +2,10 @@ package com.assistant.aiinterviewassistant.modules.user.domain.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import lombok.Data;
 import lombok.ToString;
 
+@Data
 public class ChangePasswordDto {
     private String oldPassword;
     private String code;

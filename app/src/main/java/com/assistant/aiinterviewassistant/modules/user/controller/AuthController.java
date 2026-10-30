@@ -84,7 +84,7 @@ public class AuthController {
     /**
      * 记得旧密码且已登录的情况下修改密码接口
      * @param dto
-     * @return
+     * @return滚木
      */
     @PostMapping("/changePassword")
     public R<Void> changePassword(@AuthenticationPrincipal Jwt jwt,@Valid @RequestBody ChangePasswordDto dto){
