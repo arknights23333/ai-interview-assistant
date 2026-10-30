@@ -17,7 +17,8 @@ public enum MailErrorCode implements BusinessErrorCode {
     CODE_EXPIRED(40003, HttpStatus.BAD_REQUEST, "验证码已过期，请重新获取"),
     SEND_TOO_FREQUENT(42901, HttpStatus.TOO_MANY_REQUESTS, "验证码发送过于频繁，请稍后重试"),
     SEND_FAILED(50001, HttpStatus.INTERNAL_SERVER_ERROR, "邮件发送失败，请稍后重试"),
-    INVALID_GENERATED_CODE(50002, HttpStatus.INTERNAL_SERVER_ERROR, "验证码生成异常，请稍后重试");
+    INVALID_GENERATED_CODE(50002, HttpStatus.INTERNAL_SERVER_ERROR, "验证码生成异常，请稍后重试"),
+    NEW_EMAIL_SAME_AS_OLD(40008, HttpStatus.BAD_REQUEST, "新邮箱与旧邮箱相同");
 
     private final int code;
     private final HttpStatus httpStatus;

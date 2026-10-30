@@ -12,5 +12,8 @@ public enum MailCodeScene {
     RESET_PASSWORD,
 
     /** 已登录用户通过邮箱验证码修改密码。 */
-    CHANGE_PASSWORD
+    CHANGE_PASSWORD,
+
+    /** 已登录用户改绑邮箱。 */
+    CHANGE_EMAIL
 }

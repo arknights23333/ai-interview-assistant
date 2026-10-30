@@ -16,6 +16,9 @@ public class AuthRedisKeyConstant {
     /** 修改密码邮箱验证码，格式：auth:mail:code:change-password:email。 */
     public static final String CHANGE_PASSWORD_MAIL_CODE_KEY = "auth:mail:code:change-password:";
 
+    /** 改绑邮箱验证码，格式：auth:mail:code:change-email:email。 */
+    public static final String CHANGE_EMAIL_MAIL_CODE_KEY = "auth:mail:code:change-email:";
+
     /**
      * 同一邮箱的所有用途共享发送间隔。
      * <p>格式：auth:mail:limitemail；保留现有键格式。</p>
