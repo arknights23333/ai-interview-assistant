@@ -269,6 +269,43 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
 
     }
 
+    @Override
+    public void changeEmail(Long userId, ChangeEmailDto dto) {
+        UserPo user=userService.getById(userId);
+        if (user == null) {
+            throw new BusinessException(UserErrorCode.USER_NOT_FOUND);
+        }
+        if(!passwordEncoder.matches(dto.getPassword(), user.getPasswordHash())){
+            throw new BusinessException(LoginErrorCode.BAD_CREDENTIAL);
+        }
+        String newEmail=normalizeMailAddress(dto.getNewEmail());
+
+        if(newEmail.equals(user.getEmail())){
+            throw new BusinessException(MailErrorCode.NEW_EMAIL_SAME_AS_OLD);
+        }
+        if (userService.getOne(
+                new LambdaQueryWrapper<UserPo>()
+                        .eq(UserPo::getEmail, newEmail)
+        ) != null) {
+            throw new BusinessException(MailErrorCode.EMAIL_ALREADY_BOUND);
+        }
+        try{
+            verifyAndConsumeMailCode(AuthRedisKeyConstant.CHANGE_EMAIL_MAIL_CODE_KEY, dto.getNewEmail(), dto.getCode());
+        }catch (BusinessException e){
+            // 仅转换验证码错误和过期，其他业务错误与系统故障继续抛出。
+            if (e.getCode() == MailErrorCode.CODE_MISMATCH.getCode()
+                    || e.getCode() == MailErrorCode.CODE_EXPIRED.getCode()) {
+                throw new BusinessException(MailErrorCode.EMAIL_CHANGE_VERIFICATION_FAILED, e);
+            }
+            throw e;
+        }
+        user.setEmail(newEmail);
+        if (!userService.updateById(user)) {
+            throw new BusinessException(MailErrorCode.EMAIL_CHANGE_FAILED);
+        }
+
+    }
+
     /** 保留邮箱本地部分的大小写，仅将最后一个 @ 后的域名转为小写。 */
     private String normalizeMailAddress(String email) {
         int separator = email.lastIndexOf('@');
@@ -285,6 +322,7 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
             case REGISTER -> AuthRedisKeyConstant.REGISTER_MAIL_CODE_KEY;
             case RESET_PASSWORD -> AuthRedisKeyConstant.RESET_PASSWORD_MAIL_CODE_KEY;
             case CHANGE_PASSWORD -> AuthRedisKeyConstant.CHANGE_PASSWORD_MAIL_CODE_KEY;
+            case CHANGE_EMAIL -> AuthRedisKeyConstant.CHANGE_EMAIL_MAIL_CODE_KEY;
         };
     }
 

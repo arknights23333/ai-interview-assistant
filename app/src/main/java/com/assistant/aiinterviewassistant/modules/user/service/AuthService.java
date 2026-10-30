@@ -54,4 +54,11 @@ public interface AuthService extends IService<UserPo> {
      * @param dto
      */
     void resetPassword(@Valid ResetPasswordDto dto);
+
+    /**
+     * 已登录用户修改邮箱
+     * @param userId 用户Id
+      * @param dto 修改邮箱参数
+     */
+    void changeEmail(Long UserID, ChangeEmailDto dto);
 }

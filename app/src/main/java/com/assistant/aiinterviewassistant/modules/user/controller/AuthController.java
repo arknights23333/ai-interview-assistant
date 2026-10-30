@@ -97,16 +97,29 @@ public class AuthController {
     @PostMapping("/changePassword")
     public R<Void> changePassword(@AuthenticationPrincipal Jwt jwt,@Valid @RequestBody ChangePasswordDto dto){
         authService.changePassword(Long.valueOf(jwt.getSubject()),dto);
-        return R.ok(200,"修改成功");
+        return R.ok(200,"密码修改成功");
     }
     /**
      * 不记得旧密码且未登录的情况下修改密码接口
      * @param dto
      * @return滚木
      */
-    @PostMapping("resetPassword")
+    @PostMapping("/resetPassword")
     public R<Void> resetPassword(@Valid @RequestBody ResetPasswordDto dto){
         authService.resetPassword(dto);
-        return R.ok(200,"重置成功");
+        return R.ok(200,"密码重置成功");
+    }
+
+    /**
+     * 改绑邮箱接口
+     * @param jwt
+     * @param dto
+     * @return 滚木
+     */
+    @PostMapping("/changeEmail")
+    public R<Void> changeEmail(@AuthenticationPrincipal Jwt jwt ,@Valid @RequestBody ChangeEmailDto dto)
+    {
+        authService.changeEmail(Long.valueOf(jwt.getSubject()), dto);
+        return R.ok(200,"邮箱修改成功");
     }
 }
