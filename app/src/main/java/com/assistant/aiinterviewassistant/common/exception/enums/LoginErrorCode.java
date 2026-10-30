@@ -1,5 +1,6 @@
 package com.assistant.aiinterviewassistant.common.exception.enums;
 
+import com.assistant.aiinterviewassistant.common.exception.BusinessErrorCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -9,7 +10,7 @@ import org.springframework.http.HttpStatus;
  */
 @Getter
 @RequiredArgsConstructor
-public enum LoginErrorCode {
+public enum LoginErrorCode implements BusinessErrorCode {
 
     BAD_CREDENTIAL(
             40101,

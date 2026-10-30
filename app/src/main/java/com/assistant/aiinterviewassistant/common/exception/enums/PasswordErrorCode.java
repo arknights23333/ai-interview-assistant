@@ -1,5 +1,6 @@
 package com.assistant.aiinterviewassistant.common.exception.enums;
 
+import com.assistant.aiinterviewassistant.common.exception.BusinessErrorCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -9,7 +10,7 @@ import org.springframework.http.HttpStatus;
  */
 @Getter
 @RequiredArgsConstructor
-public enum PasswordErrorCode {
+public enum PasswordErrorCode implements BusinessErrorCode {
     //提交的旧密码与当前不匹配
     OLD_PASSWORD_MIS_MATCH(
             40004,

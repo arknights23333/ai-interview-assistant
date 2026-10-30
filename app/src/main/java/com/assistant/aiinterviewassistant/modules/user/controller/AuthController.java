@@ -1,6 +1,9 @@
 package com.assistant.aiinterviewassistant.modules.user.controller;
 
+import com.assistant.aiinterviewassistant.common.exception.exception.BusinessException;
 
+
+import com.assistant.aiinterviewassistant.common.exception.enums.UserErrorCode;
 import com.assistant.aiinterviewassistant.common.response.R;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.ChangePasswordDto;
 import com.assistant.aiinterviewassistant.modules.user.domain.dto.LoginDto;
@@ -31,6 +34,9 @@ public class AuthController {
     @GetMapping("/{userID}")
     public R<UserVo> getuser(@PathVariable Long userID){
         UserPo po =userService.getById(userID);
+        if (po == null) {
+            throw new BusinessException(UserErrorCode.USER_NOT_FOUND);
+        }
         UserVo vo = new UserVo();
         BeanUtils.copyProperties(po,vo);
         return R.ok(vo);

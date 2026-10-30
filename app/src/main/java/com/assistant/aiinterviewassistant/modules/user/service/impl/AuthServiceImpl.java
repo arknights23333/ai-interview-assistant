@@ -1,13 +1,12 @@
 package com.assistant.aiinterviewassistant.modules.user.service.impl;
 
+import com.assistant.aiinterviewassistant.common.exception.exception.BusinessException;
+
 import com.assistant.aiinterviewassistant.common.exception.enums.LoginErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.enums.MailErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.enums.PasswordErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.enums.RegisterErrorCode;
-import com.assistant.aiinterviewassistant.common.exception.exception.LoginException;
-import com.assistant.aiinterviewassistant.common.exception.exception.MailBusinessException;
-import com.assistant.aiinterviewassistant.common.exception.exception.PasswordException;
-import com.assistant.aiinterviewassistant.common.exception.exception.RegisterException;
+import com.assistant.aiinterviewassistant.common.exception.enums.UserErrorCode;
 import com.assistant.aiinterviewassistant.infrastructure.mail.service.MailService;
 import com.assistant.aiinterviewassistant.infrastructure.redis.constant.AuthRedisKeyConstant;
 import com.assistant.aiinterviewassistant.infrastructure.redis.service.RedisService;
@@ -75,13 +74,17 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
         try {
             Authentication authResponse=authenticationManager.authenticate(authRequest);
         } catch (DisabledException e) {
-            throw new LoginException(LoginErrorCode.USER_DISABLED,e);
+            throw new BusinessException(UserErrorCode.USER_DISABLED, e);
         } catch(BadCredentialsException e){
-            throw new LoginException(LoginErrorCode.BAD_CREDENTIAL,e);
+            throw new BusinessException(LoginErrorCode.BAD_CREDENTIAL,e);
         }
         long validitySeconds = jwtProperties.getValiditySeconds();
 
         UserPo user = userService.getUserByUsername(dto.getUsername());
+        if (user == null) {
+            // 认证后再次查询时用户也可能已被删除，仍统一提示账号或密码错误。
+            throw new BusinessException(LoginErrorCode.BAD_CREDENTIAL, null);
+        }
         String sessionId = UUID.randomUUID().toString();
         String token = jwtService.generateToken(user.getId(), sessionId, validitySeconds);
         redisService.setCacheObject(AuthRedisKeyConstant.AUTH_LOGIN_KEY + user.getId(), sessionId, validitySeconds, TimeUnit.SECONDS);
@@ -104,7 +107,7 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
         String code=generateVerificationCode();
         if (code == null || !code.matches(CODE_REGEX)) {
             // 验证码格式错误
-            throw new MailBusinessException(MailErrorCode.INVALID_GENERATED_CODE);
+            throw new BusinessException(MailErrorCode.INVALID_GENERATED_CODE);
         }
 
         String script= """
@@ -123,7 +126,7 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
 
         if(result == null || result == 0)
         {
-            throw new MailBusinessException(MailErrorCode.SEND_TOO_FREQUENT);
+            throw new BusinessException(MailErrorCode.SEND_TOO_FREQUENT);
         }
         try{
                 mailService.sendVerificationCodeByMail(dto.getEmail(), code);
@@ -134,7 +137,7 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
                     // 清理失败也保留排查信息，不覆盖原始发送异常。
                     e.addSuppressed(cleanupException);
                 }
-           throw new MailBusinessException(MailErrorCode.SEND_FAILED, e);
+           throw new BusinessException(MailErrorCode.SEND_FAILED, e);
         }
 
     }
@@ -164,20 +167,20 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
             throw new IllegalStateException("验证码校验脚本未返回执行结果");
         }
         if (result == 0L) {
-            throw new MailBusinessException(MailErrorCode.CODE_EXPIRED);
+            throw new BusinessException(MailErrorCode.CODE_EXPIRED);
         }
         if (result == -1L) {
-            throw new MailBusinessException(MailErrorCode.CODE_MISMATCH);
+            throw new BusinessException(MailErrorCode.CODE_MISMATCH);
         }
     }
 
     @Override
     public void register(RegisterDto dto) {
         if(userService.getOne(new LambdaQueryWrapper<UserPo>().eq(UserPo::getUsername, dto.getUsername())) != null){
-            throw new RegisterException(RegisterErrorCode.USERNAME_ALREADY_EXISTS);
+            throw new BusinessException(RegisterErrorCode.USERNAME_ALREADY_EXISTS);
         }
         if(userService.getOne(new LambdaQueryWrapper<UserPo>().eq(UserPo::getEmail, dto.getEmail())) != null){
-            throw new RegisterException(RegisterErrorCode.EMAIL_ALREADY_BOUND);
+            throw new BusinessException(RegisterErrorCode.EMAIL_ALREADY_BOUND);
         }
         verifyAndConsumeMailCode(
                 AuthRedisKeyConstant.REGISTER_MAIL_CODE_KEY,
@@ -204,12 +207,12 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
     public void changePassword(Long userId, ChangePasswordDto dto) {
         UserPo user = userService.getById(userId);
         if (user == null) {
-            throw new UserException(UserErrorCode.USER_NOT_FOUND);
+            throw new BusinessException(UserErrorCode.USER_NOT_FOUND);
         }
         // 优先验证旧密码；未提供旧密码时，验证当前绑定邮箱的验证码。
         if (StringUtils.hasText(dto.getOldPassword())) {
             if (!passwordEncoder.matches(dto.getOldPassword(), user.getPasswordHash())) {
-                throw new PasswordException(PasswordErrorCode.OLD_PASSWORD_MIS_MATCH);
+                throw new BusinessException(PasswordErrorCode.OLD_PASSWORD_MIS_MATCH);
             }
         } else if (StringUtils.hasText(dto.getCode())) {
             verifyAndConsumeMailCode(
@@ -218,14 +221,14 @@ public class AuthServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
                     dto.getCode()
             );
         } else {
-            throw new PasswordException(PasswordErrorCode.VERIFICATION_REQUIRED);
+            throw new BusinessException(PasswordErrorCode.VERIFICATION_REQUIRED);
         }
         if (passwordEncoder.matches(dto.getNewPassword(), user.getPasswordHash())) {
-            throw new PasswordException(PasswordErrorCode.NEW_PASSWORD_SAME_AS_OLD);
+            throw new BusinessException(PasswordErrorCode.NEW_PASSWORD_SAME_AS_OLD);
         }
         user.setPasswordHash(passwordEncoder.encode(dto.getNewPassword()));
         if (!userService.updateById(user)) {
-            throw new PasswordException(PasswordErrorCode.PASSWORD_RESET_FAILED);
+            throw new BusinessException(PasswordErrorCode.PASSWORD_RESET_FAILED);
         }
 
         redisService.deleteObject(AuthRedisKeyConstant.AUTH_LOGIN_KEY + userId);

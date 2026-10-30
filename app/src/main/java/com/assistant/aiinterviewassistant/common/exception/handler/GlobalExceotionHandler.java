@@ -1,11 +1,7 @@
 package com.assistant.aiinterviewassistant.common.exception.handler;
 
 
-import com.assistant.aiinterviewassistant.common.exception.exception.LoginException;
-import com.assistant.aiinterviewassistant.common.exception.exception.MailBusinessException;
-import com.assistant.aiinterviewassistant.common.exception.exception.PasswordException;
-import com.assistant.aiinterviewassistant.common.exception.exception.RegisterException;
-import com.assistant.aiinterviewassistant.common.exception.exception.UserException;
+import com.assistant.aiinterviewassistant.common.exception.exception.BusinessException;
 import com.assistant.aiinterviewassistant.common.response.R;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
@@ -22,43 +18,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceotionHandler {
 
-    @ExceptionHandler(LoginException.class)
-    public ResponseEntity<R<Void>> handleLoginException(LoginException e) {
+    /** 所有业务错误共用此入口，具体状态和提示由错误码定义。 */
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<R<Void>> handleBusinessException(BusinessException e) {
         if (e.getHttpStatus().is5xxServerError()) {
-            log.error("登录业务处理失败，业务码：{}", e.getCode(), e);
-        }
-        return ResponseEntity.status(e.getHttpStatus())
-                .body(R.<Void>fail(e.getCode(), e.getMessage()));
-    }
-    @ExceptionHandler(MailBusinessException.class)
-    public ResponseEntity<R<Void>> handleMailBusinessException(MailBusinessException e) {
-        if (e.getHttpStatus().is5xxServerError()) {
-            log.error("邮件业务处理失败，业务码：{}", e.getCode(), e);
-        }
-        // ResponseEntity 设置 HTTP 状态，R.code 表达具体业务原因。
-        return ResponseEntity.status(e.getHttpStatus())
-                .body(R.<Void>fail(e.getCode(), e.getMessage()));
-    }
-    @ExceptionHandler(RegisterException.class)
-    public ResponseEntity<R<Void>> handleRegisterException(RegisterException e) {
-        if (e.getHttpStatus().is5xxServerError()) {
-            log.error("注册业务处理失败，业务码：{}", e.getCode(), e);
-        }
-        return ResponseEntity.status(e.getHttpStatus())
-                .body(R.<Void>fail(e.getCode(), e.getMessage()));
-    }
-    @ExceptionHandler(PasswordException.class)
-    public ResponseEntity<R<Void>> handlePasswordException(PasswordException e) {
-        if (e.getHttpStatus().is5xxServerError()) {
-            log.error("密码业务处理失败，业务码：{}", e.getCode(), e);
-        }
-        return ResponseEntity.status(e.getHttpStatus())
-                .body(R.<Void>fail(e.getCode(), e.getMessage()));
-    }
-    @ExceptionHandler(UserException.class)
-    public ResponseEntity<R<Void>> handleUserException(UserException e) {
-        if (e.getHttpStatus().is5xxServerError()) {
-            log.error("用户业务处理失败，业务码：{}", e.getCode(), e);
+            log.error("业务处理失败，业务码：{}", e.getCode(), e);
         }
         return ResponseEntity.status(e.getHttpStatus())
                 .body(R.<Void>fail(e.getCode(), e.getMessage()));

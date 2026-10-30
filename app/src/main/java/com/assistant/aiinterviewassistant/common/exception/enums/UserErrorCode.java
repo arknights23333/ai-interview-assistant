@@ -1,5 +1,6 @@
 package com.assistant.aiinterviewassistant.common.exception.enums;
 
+import com.assistant.aiinterviewassistant.common.exception.BusinessErrorCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -9,7 +10,7 @@ import org.springframework.http.HttpStatus;
  */
 @Getter
 @RequiredArgsConstructor
-public enum UserErrorCode {
+public enum UserErrorCode implements BusinessErrorCode {
 
     /** 要操作的用户不存在。 */
     USER_NOT_FOUND(40401, HttpStatus.NOT_FOUND, "用户不存在"),

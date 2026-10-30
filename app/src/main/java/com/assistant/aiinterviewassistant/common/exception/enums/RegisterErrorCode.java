@@ -1,5 +1,6 @@
 package com.assistant.aiinterviewassistant.common.exception.enums;
 
+import com.assistant.aiinterviewassistant.common.exception.BusinessErrorCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -9,7 +10,7 @@ import org.springframework.http.HttpStatus;
  */
 @Getter
 @RequiredArgsConstructor
-public enum RegisterErrorCode {
+public enum RegisterErrorCode implements BusinessErrorCode {
 
     USERNAME_ALREADY_EXISTS(40901, HttpStatus.CONFLICT, "用户名已存在"),
     EMAIL_ALREADY_BOUND(40902, HttpStatus.CONFLICT, "该邮箱已绑定账号"),
