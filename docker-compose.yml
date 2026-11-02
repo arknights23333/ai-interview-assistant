@@ -23,5 +23,21 @@ services:
     ports:
       - "6379:6379"
 
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: ai-interview-assistant-rustfs
+    ports:
+      - "127.0.0.1:9000:9000" # S3 API，供后端调用
+      - "127.0.0.1:9001:9001" # Web 管理控制台
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?请在根目录.env中设置RUSTFS_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?请在根目录.env中设置RUSTFS_SECRET_KEY}
+      RUSTFS_CONSOLE_ENABLE: "true"
+    command: ["/data"]
+    volumes:
+      - rustfs_data:/data
+
 volumes:
   pgdata:
+  rustfs_data:
