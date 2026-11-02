@@ -18,7 +18,11 @@ import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
@@ -33,6 +37,44 @@ public class FileStorageService {
     private final S3Client client;
     private final StorageConfigProperties storageproperties;
     private final S3Presigner presigner;
+
+    /**
+     * 上传简历原文件。
+     *
+     * @param file 已由业务层完成校验的上传文件
+     * @return 对象存储 key，使用 resumes 前缀
+     */
+    public String uploadResume(MultipartFile file) {
+        return fileUpload(file, "resumes");
+    }
+
+    /**
+     * 上传知识库文档。
+     *
+     * @param file 已由业务层完成校验的上传文件
+     * @return 对象存储 key，使用 knowledgebases 前缀
+     */
+    public String uploadKnowledgeBase(MultipartFile file) {
+        return fileUpload(file, "knowledgebases");
+    }
+
+    /**
+     * 彻底删除简历原文件，移入回收站时不调用。
+     *
+     * @param fileKey 已由业务层校验归属的文件存储 key
+     */
+    public void deleteResume(String fileKey) {
+        fileDelete(fileKey);
+    }
+
+    /**
+     * 删除知识库原文件。
+     *
+     * @param fileKey 已由业务层校验归属的文件存储 key
+     */
+    public void deleteKnowledgeBase(String fileKey) {
+        fileDelete(fileKey);
+    }
 
     /** 上传文件并返回对象存储 key；由本方法关闭打开的文件输入流。 */
     private String fileUpload(MultipartFile file, String prefix) {
@@ -96,9 +138,8 @@ public class FileStorageService {
     }
 
     /**
-     * 删除文件
-     * @param key 数据库保管的文件存储key
-     * @return 滚木
+     * 删除文件，对象不存在时直接返回。
+     * @param key 数据库保存的文件存储 key
      */
     public void fileDelete(String key){
         if (key == null || key.isEmpty()) {
