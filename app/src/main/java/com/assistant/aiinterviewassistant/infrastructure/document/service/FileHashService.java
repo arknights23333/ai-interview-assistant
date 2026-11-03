@@ -22,7 +22,6 @@ public class FileHashService {
      * @param inputStream 输入流，调用方负责关闭
      * @return 转换成16进制的文件哈希值
      */
-
     public String calculateHash(InputStream inputStream)
     {
         try{
