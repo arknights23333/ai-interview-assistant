@@ -25,7 +25,9 @@ public class NoOpEmbeddedDocumentExtractor implements EmbeddedDocumentExtractor 
     public boolean shouldParseEmbedded(Metadata metadata) {
         //记录跳过的文档
         String fileName = metadata.get("resourceName");
-        log.debug("跳过文档的名字: {}", fileName);
+        if (fileName != null) {
+            log.debug("Skip embedded document: {}", fileName);
+        }
         return false;
     }
 
