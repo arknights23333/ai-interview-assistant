@@ -34,7 +34,10 @@ public enum FileErrorCode implements BusinessErrorCode {
     FILE_TYPE_DETECTION_FAILED(50010, HttpStatus.INTERNAL_SERVER_ERROR, "文件类型检测失败，请重新上传"),
 
     /** 计算文件内容的 SHA-256 哈希失败。 */
-    FILE_HASH_FAILED(50011, HttpStatus.INTERNAL_SERVER_ERROR, "文件哈希计算失败，请稍后重试");
+    FILE_HASH_FAILED(50011, HttpStatus.INTERNAL_SERVER_ERROR, "文件哈希计算失败，请稍后重试"),
+
+    /** 文档解析失败，无法提取正文。 */
+    FILE_PARSE_ERROR(50012, HttpStatus.INTERNAL_SERVER_ERROR, "文件解析失败，请检查文件是否损坏或更换文件");
     private final int code;
     private final HttpStatus httpStatus;
     private final String message;

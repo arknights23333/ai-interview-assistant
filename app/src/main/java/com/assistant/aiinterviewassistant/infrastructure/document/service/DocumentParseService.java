@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.xml.sax.SAXException;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -30,23 +31,40 @@ import java.io.InputStream;
 public class DocumentParseService {
 
 
-    private static final int MAX_TEXT_LENGTH=5*1024*1024;
+    private static final int MAX_TEXT_LENGTH=10*1024*1024;
+
+    private final TextCleaningService textCleaningService;
     /**
      * 解析上传的文件，提取文本内容
      *
      * @param file 上传的文件（支持PDF、DOCX、DOC、TXT、MD等）
      * @return 提取的文本内容
      */
-    public String parseContent(MultipartFile file) throws IOException, TikaException, SAXException {
+    public String parseContent(MultipartFile file)  {
         String fileName = file.getOriginalFilename();
         log.info("开始解析文件: {}", fileName);
         if (file.isEmpty() || file.getSize() == 0) {
             throw new BusinessException(FileErrorCode.FILE_EMPTY);
         }
         try(InputStream inputStream = file.getInputStream()){
-            return parseContent(inputStream);
+            String text=parseContent(inputStream);
+            return textCleaningService.cleanTextWithLimit(text, MAX_TEXT_LENGTH);
+        } catch(TikaException|IOException| SAXException e ){
+        throw new BusinessException(FileErrorCode.FILE_PARSE_ERROR,e);
+    }
+
+    }
+    public String parseContent(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            throw new BusinessException(FileErrorCode.FILE_EMPTY);
         }
 
+        try (InputStream inputStream = new ByteArrayInputStream(bytes)) {
+            String text = parseContent(inputStream);
+            return textCleaningService.cleanTextWithLimit(text, MAX_TEXT_LENGTH);
+        } catch (TikaException | IOException | SAXException e) {
+            throw new BusinessException(FileErrorCode.FILE_PARSE_ERROR, e);
+        }
     }
 
     /**
@@ -71,7 +89,7 @@ public class DocumentParseService {
         pdfConfig.setSortByPosition(true); // 按 x/y 坐标排序文本，改善多栏布局解析顺序
         context.set(PDFParserConfig.class, pdfConfig);
 
-        parser.parse(inputStream, handler, metadata);
+        parser.parse(inputStream, handler, metadata, context);
         return handler.toString();
 
     }
