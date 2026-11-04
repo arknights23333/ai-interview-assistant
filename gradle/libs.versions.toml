@@ -20,7 +20,7 @@ mybatis-plus-spring-boot4-starter = { module = "com.baomidou:mybatis-plus-spring
 spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }
 spring-boot-starter-security-oauth2-resource-server = { module = "org.springframework.boot:spring-boot-starter-security-oauth2-resource-server" }
 software-amazon-awssdk = { module = "software.amazon.awssdk:s3", version = "2.25.27" }
-
+mybatis-plus-jsqlparser = { module = "com.baomidou:mybatis-plus-jsqlparser", version.ref = "mybatis-plus" }
 tika-core = { module = "org.apache.tika:tika-core", version.ref = "tika" }
 tika-parsers-standard-package = { module = "org.apache.tika:tika-parsers-standard-package", version.ref = "tika" }
 

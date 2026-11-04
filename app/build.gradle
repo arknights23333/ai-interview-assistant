@@ -42,6 +42,7 @@ dependencies {
     implementation libs.software.amazon.awssdk
     implementation libs.tika.core
     implementation libs.tika.parsers.standard.package
+    implementation libs.mybatis.plus.jsqlparser
 }
 
 tasks.named('test') {
