@@ -6,9 +6,11 @@ import com.assistant.aiinterviewassistant.common.exception.exception.BusinessExc
 import com.assistant.aiinterviewassistant.common.response.R;
 import com.assistant.aiinterviewassistant.infrastructure.document.service.ContentTypeDetectionService;
 import com.assistant.aiinterviewassistant.infrastructure.document.service.FileHashService;
+import com.assistant.aiinterviewassistant.infrastructure.document.service.DocumentParseService;
 import com.assistant.aiinterviewassistant.infrastructure.storage.service.FileStorageService;
 import com.assistant.aiinterviewassistant.modules.resume.constant.ResumeParseStatusConstant;
 import com.assistant.aiinterviewassistant.modules.resume.domain.po.ResumePo;
+import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeParseVo;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeUploadVo;
 import com.assistant.aiinterviewassistant.modules.resume.service.ResumeService;
 import com.assistant.aiinterviewassistant.modules.resume.mapper.ResumeMapper;
@@ -26,6 +28,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.RejectedExecutionException;
 
 @Slf4j
 @Service
@@ -39,6 +43,10 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
     private final FileHashService fileHashService;
 
     private final ContentTypeDetectionService contentTypeDetectionService;
+
+    private final DocumentParseService documentParseService;
+
+    private final ThreadPoolExecutor documentParseThreadPoolExecutor;
 
     /** 简历文件最大为 10 MiB。 */
     private static final long MAX_RESUME_FILE_SIZE = 10L * 1024 * 1024;
@@ -103,6 +111,91 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
         return R.ok(new ResumeUploadVo(resume.getId()));
     }
 
+    @Override
+    public R<Void> parseResume(Long resumeId, Long userId) {
+        ResumePo resume = getOne(new LambdaQueryWrapper<ResumePo>()
+                .eq(ResumePo::getId, resumeId)
+                .eq(ResumePo::getUserId, userId)
+                .isNull(ResumePo::getDeleteTime));
+
+        if (resume == null) {
+            throw new BusinessException(FileErrorCode.FILE_NOT_FOUND);
+        }
+        if (ResumeParseStatusConstant.PROCESSING.equals(resume.getParseStatus())) {
+            return R.<Void>ok("解析任务正在处理，请勿重复提交");
+        }
+
+        // 提交前占用状态，PROCESSING 同时包括排队与执行阶段。
+        boolean accepted = update(new LambdaUpdateWrapper<ResumePo>()
+                .eq(ResumePo::getId, resumeId)
+                .eq(ResumePo::getUserId, userId)
+                .isNull(ResumePo::getDeleteTime)
+                .eq(ResumePo::getParseStatus, resume.getParseStatus())
+                .set(ResumePo::getParseStatus, ResumeParseStatusConstant.PROCESSING)
+                .set(ResumePo::getParseError, null));
+        if (!accepted) {
+            throw new BusinessException(FileErrorCode.FILE_PARSE_ERROR);
+        }
+
+        try {
+            documentParseThreadPoolExecutor.execute(() -> {
+                try {
+                    // 在后台线程中完成下载、解析和清洗，不阻塞请求线程。
+                    String text = documentParseService.parseContent(resume.getStorageKey());
+                    if (text == null || text.isBlank()) {
+                        throw new BusinessException(FileErrorCode.FILE_PARSE_ERROR);
+                    }
+                    boolean saved = update(new LambdaUpdateWrapper<ResumePo>()
+                            .eq(ResumePo::getId, resumeId)
+                            .eq(ResumePo::getUserId, userId)
+                            .eq(ResumePo::getParseStatus, ResumeParseStatusConstant.PROCESSING)
+                            .set(ResumePo::getResumeContent, text)
+                            .set(ResumePo::getParseStatus, ResumeParseStatusConstant.SUCCESS)
+                            .set(ResumePo::getParseError, null));
+                    if (!saved) {
+                        throw new IllegalStateException("保存简历解析结果失败");
+                    }
+                } catch (Exception e) {
+                    log.error("简历解析失败，resumeId: {}", resumeId, e);
+                    String message = e instanceof BusinessException
+                            ? e.getMessage() : "文件解析失败，请稍后重试";
+                    try {
+                        boolean marked = update(new LambdaUpdateWrapper<ResumePo>()
+                                .eq(ResumePo::getId, resumeId)
+                                .eq(ResumePo::getUserId, userId)
+                                .eq(ResumePo::getParseStatus, ResumeParseStatusConstant.PROCESSING)
+                                .set(ResumePo::getParseStatus, ResumeParseStatusConstant.FAILED)
+                                .set(ResumePo::getParseError, message));
+                        if (!marked) {
+                            log.warn("未更新简历解析失败状态，resumeId: {}", resumeId);
+                        }
+                    } catch (RuntimeException stateException) {
+                        log.error("保存简历解析失败状态时出错，resumeId: {}", resumeId, stateException);
+                    }
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            // 任务未入队，不能留下正在处理的状态。
+            log.warn("解析线程池拒绝任务，resumeId: {}", resumeId, e);
+            try {
+                boolean marked = update(new LambdaUpdateWrapper<ResumePo>()
+                        .eq(ResumePo::getId, resumeId)
+                        .eq(ResumePo::getUserId, userId)
+                        .eq(ResumePo::getParseStatus, ResumeParseStatusConstant.PROCESSING)
+                        .set(ResumePo::getParseStatus, ResumeParseStatusConstant.FAILED)
+                        .set(ResumePo::getParseError, "解析任务繁忙，请稍后重试"));
+                if (!marked) {
+                    log.warn("未更新解析任务被拒绝后的失败状态，resumeId: {}", resumeId);
+                }
+            } catch (RuntimeException stateException) {
+                e.addSuppressed(stateException);
+                log.error("保存解析任务被拒绝后的失败状态时出错，resumeId: {}", resumeId, stateException);
+            }
+            throw new BusinessException(FileErrorCode.FILE_PARSE_ERROR, e);
+        }
+
+        return R.<Void>ok("解析任务已提交");
+    }
     /**
      * 检查文件是否已存在
      * @param hash

@@ -15,4 +15,13 @@ public interface ResumeService extends IService<ResumePo> {
      * @return
      */
      R<ResumeUploadVo> upload(@Nullable Long id, MultipartFile file);
+
+    /**
+     * 校验简历归属并提交后台正文解析任务。
+     *
+     * @param resumeId 简历 ID
+     * @param userId 当前登录用户 ID
+     * @return 任务提交结果，最终解析状态通过后续查询获取
+     */
+    R<Void> parseResume(Long resumeId, Long userId);
 }
