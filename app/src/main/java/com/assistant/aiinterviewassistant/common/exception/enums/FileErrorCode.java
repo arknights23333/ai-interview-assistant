@@ -13,7 +13,7 @@ import org.springframework.http.HttpStatus;
 public enum FileErrorCode implements BusinessErrorCode {
 
     /** 没有选择文件，或者文件内容为空。 */
-    FILE_EMPTY(40010, HttpStatus.BAD_REQUEST, "上传文件不能为空"),
+    FILE_EMPTY(40010, HttpStatus.BAD_REQUEST, "文件不能为空"),
 
     /** 文件超过对应业务允许的大小。 */
     FILE_TOO_LARGE(41301, HttpStatus.PAYLOAD_TOO_LARGE, "文件大小超过限制"),
@@ -21,6 +21,8 @@ public enum FileErrorCode implements BusinessErrorCode {
     /** 文件实际类型不在对应业务允许的范围内。 */
     FILE_TYPE_NOT_SUPPORTED(41501, HttpStatus.UNSUPPORTED_MEDIA_TYPE, "不支持的文件类型"),
 
+    /** 当前用户已上传相同内容且未移入回收站的文件。 */
+    FILE_ALREADY_EXISTS(40903, HttpStatus.CONFLICT, "文件已存在，请勿重复上传"),
     /** 服务端读取上传文件内容失败。 */
     FILE_READ_FAILED(50007, HttpStatus.INTERNAL_SERVER_ERROR, "文件读取失败，请重新上传"),
 

@@ -1,4 +1,9 @@
 spring:
+  # 不设全局上传大小限制，各业务分别校验允许的文件大小。
+  servlet:
+    multipart:
+      max-file-size: -1
+      max-request-size: -1
   application:
     name: ai-interview-assistant
   # QQ 邮箱发信配置，账号和授权码由 IDEA VM options 提供。
