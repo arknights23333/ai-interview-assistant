@@ -3,6 +3,7 @@ package com.assistant.aiinterviewassistant.modules.resume.service;
 import com.assistant.aiinterviewassistant.common.response.R;
 import com.assistant.aiinterviewassistant.modules.resume.domain.po.ResumePo;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeUploadVo;
+import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeVo;
 import com.baomidou.mybatisplus.spring.service.IService;
 import org.jspecify.annotations.Nullable;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,4 +25,12 @@ public interface ResumeService extends IService<ResumePo> {
      * @return 任务提交结果，最终解析状态通过后续查询获取
      */
     R<Void> parseResume(Long resumeId, Long userId);
+
+    /**
+     * 查询简历
+     * @param resumeId
+     * @param userId
+     * @return
+     */
+    R<ResumeVo> getResume(Long resumeId, Long userId);
 }

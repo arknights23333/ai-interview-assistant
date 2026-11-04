@@ -1,7 +1,7 @@
 package com.assistant.aiinterviewassistant.modules.resume.service.impl;
 
 import com.assistant.aiinterviewassistant.common.exception.enums.FileErrorCode;
-import com.assistant.aiinterviewassistant.common.exception.enums.UserErrorCode;
+import com.assistant.aiinterviewassistant.common.exception.enums.ResumeErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.exception.BusinessException;
 import com.assistant.aiinterviewassistant.common.response.R;
 import com.assistant.aiinterviewassistant.infrastructure.document.service.ContentTypeDetectionService;
@@ -10,12 +10,10 @@ import com.assistant.aiinterviewassistant.infrastructure.document.service.Docume
 import com.assistant.aiinterviewassistant.infrastructure.storage.service.FileStorageService;
 import com.assistant.aiinterviewassistant.modules.resume.constant.ResumeParseStatusConstant;
 import com.assistant.aiinterviewassistant.modules.resume.domain.po.ResumePo;
-import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeParseVo;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeUploadVo;
+import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeVo;
 import com.assistant.aiinterviewassistant.modules.resume.service.ResumeService;
 import com.assistant.aiinterviewassistant.modules.resume.mapper.ResumeMapper;
-import com.assistant.aiinterviewassistant.modules.user.domain.po.UserPo;
-import com.assistant.aiinterviewassistant.modules.user.domain.vo.UserVo;
 import com.assistant.aiinterviewassistant.modules.user.service.UserService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -26,7 +24,6 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.RejectedExecutionException;
@@ -196,6 +193,30 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
 
         return R.<Void>ok("解析任务已提交");
     }
+
+    @Override
+    public R<ResumeVo> getResume(Long resumeId, Long userId) {
+        ResumePo resume =getOne(new LambdaQueryWrapper<ResumePo>()
+                .eq(ResumePo::getId, resumeId)
+                .eq(ResumePo::getUserId, userId)
+                .isNull(ResumePo::getDeleteTime));
+
+        if(resume==null)
+        {
+            throw new BusinessException(ResumeErrorCode.RESUME_NOT_FOUND);
+        }
+        ResumeVo vo =new ResumeVo();
+        vo.setId(resume.getId());
+        vo.setResumeContent(resume.getResumeContent());
+        vo.setCreateAt(resume.getCreateAt());
+        vo.setFileName(resume.getFileName());
+        vo.setFileSize(resume.getFileSize());
+        vo.setParseStatus(resume.getParseStatus());
+        vo.setParseError(resume.getParseError());
+        vo.setContentType(resume.getContentType());
+        return R.ok(vo);
+    }
+
     /**
      * 检查文件是否已存在
      * @param hash

@@ -1,13 +1,11 @@
 package com.assistant.aiinterviewassistant.modules.resume.controller;
 import com.assistant.aiinterviewassistant.common.response.R;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeUploadVo;
+import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeVo;
 import com.assistant.aiinterviewassistant.modules.resume.service.ResumeService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,6 +15,10 @@ import org.springframework.web.multipart.MultipartFile;
 public class ResumeController {
 
     private final ResumeService resumeService;
+    @GetMapping("/get/{resumeId}")
+    public R<ResumeVo> getResume(@PathVariable("resumeId") Long resumeId, @AuthenticationPrincipal Jwt jwt){
+        return resumeService.getResume(resumeId, Long.valueOf(jwt.getSubject()));
+    }
     @PostMapping("/upload")
     public R<ResumeUploadVo> upload(@AuthenticationPrincipal Jwt jwt, MultipartFile file) {
         return resumeService.upload(Long.valueOf(jwt.getSubject()), file);
