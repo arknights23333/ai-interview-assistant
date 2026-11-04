@@ -1,12 +1,16 @@
 package com.assistant.aiinterviewassistant.modules.resume.service;
 
+import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.response.R;
 import com.assistant.aiinterviewassistant.modules.resume.domain.po.ResumePo;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeUploadVo;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeVo;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.IService;
 import org.jspecify.annotations.Nullable;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 public interface ResumeService extends IService<ResumePo> {
     /**
@@ -33,4 +37,11 @@ public interface ResumeService extends IService<ResumePo> {
      * @return
      */
     R<ResumeVo> getResume(Long resumeId, Long userId);
+
+    /**
+     * 查询用户的简历列表
+     * @param userId
+     * @return
+     */
+    R<Page<ResumeVo>> getResumeList(Long userId, PageQuery pageQuery);
 }

@@ -1,24 +1,57 @@
 package com.assistant.aiinterviewassistant.modules.resume.controller;
+import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.response.R;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeUploadVo;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeVo;
 import com.assistant.aiinterviewassistant.modules.resume.service.ResumeService;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
+/**
+ * 简历模块接口
+ * @folder 简历模块
+ */
 @RestController
 @RequestMapping("/api/resume")
 @RequiredArgsConstructor
 public class ResumeController {
 
     private final ResumeService resumeService;
+
+    /**
+     * 获取简历信息
+     * @param resumeId
+     * @param jwt
+     * @return
+     */
     @GetMapping("/get/{resumeId}")
     public R<ResumeVo> getResume(@PathVariable("resumeId") Long resumeId, @AuthenticationPrincipal Jwt jwt){
         return resumeService.getResume(resumeId, Long.valueOf(jwt.getSubject()));
     }
+
+    /**
+     * 获取用户的简历列表
+     * @param
+     * @return
+     */
+    @PostMapping("/list")
+    public R<Page<ResumeVo>> getResumeList(@AuthenticationPrincipal Jwt jwt, @Valid @ModelAttribute PageQuery pageQuery) {
+        return resumeService.getResumeList(Long.valueOf(jwt.getSubject()),pageQuery);
+    }
+
+    /**
+     * 上传简历
+     * @param jwt
+     * @param file
+     * @return
+     */
     @PostMapping("/upload")
     public R<ResumeUploadVo> upload(@AuthenticationPrincipal Jwt jwt, MultipartFile file) {
         return resumeService.upload(Long.valueOf(jwt.getSubject()), file);

@@ -1,5 +1,6 @@
 package com.assistant.aiinterviewassistant.modules.resume.service.impl;
 
+import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.exception.enums.FileErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.enums.ResumeErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.exception.BusinessException;
@@ -17,10 +18,12 @@ import com.assistant.aiinterviewassistant.modules.resume.mapper.ResumeMapper;
 import com.assistant.aiinterviewassistant.modules.user.service.UserService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -217,6 +220,39 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
         return R.ok(vo);
     }
 
+    @Override
+    public R<Page<ResumeVo>> getResumeList(Long userId, PageQuery pageQuery) {
+        Page<ResumePo> page =new Page<>(pageQuery.getPageNum(), pageQuery.getPageSize());
+        Page<ResumePo> result=page(page,new LambdaQueryWrapper<ResumePo>()
+                .eq(ResumePo::getUserId, userId)
+                .isNull(ResumePo::getDeleteTime)
+                .orderByDesc(ResumePo::getCreateAt)
+                .orderByDesc(ResumePo::getId));
+        return R.ok(convertPage(result, ResumeVo.class));
+    }
+
+    /**
+     * 保留分页信息，并将当前页记录逐条属性对拷为目标类型。
+     *
+     * @param source 原分页结果
+     * @param targetType 具有可用无参构造器的目标类型
+     * @param <S> 原记录类型
+     * @param <T> 目标记录类型
+     * @return 转换后的分页结果
+     */
+    private <S, T> Page<T> convertPage(Page<S> source, Class<T> targetType) {
+        return new Page<T>(
+                source.getCurrent(),
+                source.getSize(),
+                source.getTotal()
+        ).setRecords(source.getRecords().stream()
+                .map(item -> {
+                    T target = BeanUtils.instantiateClass(targetType);
+                    BeanUtils.copyProperties(item, target);
+                    return target;
+                })
+                .toList());
+    }
     /**
      * 检查文件是否已存在
      * @param hash
