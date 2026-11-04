@@ -2,6 +2,7 @@ package com.assistant.aiinterviewassistant.modules.user.service.impl;
 
 import com.assistant.aiinterviewassistant.common.exception.enums.UserErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.exception.BusinessException;
+import com.assistant.aiinterviewassistant.modules.user.constant.UserStatusConstant;
 import com.assistant.aiinterviewassistant.modules.user.domain.vo.UserVo;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import java.time.OffsetDateTime;
@@ -43,6 +44,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserPo> implements 
         }
     }
 
+    @Override
+    public UserPo getUserByIdOrThrow(Long userId) {
+        UserPo user = getById(userId);
+        if (user == null) {
+            throw new BusinessException(UserErrorCode.USER_NOT_FOUND);
+        }
+        return user;
+    }
+
+    @Override
+    public UserPo getActiveUserByIdOrThrow(Long userId) {
+        UserPo user = getUserByIdOrThrow(userId);
+        if (!UserStatusConstant.ACTIVE.equals(user.getStatus())) {
+            throw new BusinessException(UserErrorCode.USER_DISABLED);
+        }
+        return user;
+    }
     public UserPo getUserByUsername(String username) {
         return this.baseMapper.selectOne(new LambdaQueryWrapper<UserPo>()
                 .eq(UserPo::getUsername, username)

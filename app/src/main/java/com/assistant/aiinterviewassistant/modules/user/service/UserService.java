@@ -20,6 +20,22 @@ public interface UserService extends IService<UserPo> {
      */
     UserPo getUserByUsername(String username);
 
+    /**
+     * 根据用户 ID 查询用户，不存在时抛出业务异常。
+     *
+     * @param userId 用户 ID
+     * @return 用户持久化对象，包含密码摘要，仅供服务端内部使用
+     * @throws com.assistant.aiinterviewassistant.common.exception.exception.BusinessException 用户不存在
+     */
+    UserPo getUserByIdOrThrow(Long userId);
+
+    /**
+     * 根据用户 ID 查询有效用户，不存在或状态非 ACTIVE 时抛出业务异常。
+     *
+     * @param userId 用户 ID
+     * @return 状态有效的用户持久化对象，包含密码摘要，仅供服务端内部使用
+     */
+    UserPo getActiveUserByIdOrThrow(Long userId);
     /** 根据当前用户 ID 获取个人信息。 */
     UserVo getCurrentUser(Long userId);
 
