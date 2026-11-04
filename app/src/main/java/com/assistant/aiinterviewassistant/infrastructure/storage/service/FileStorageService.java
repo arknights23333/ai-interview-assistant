@@ -18,11 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
@@ -111,6 +107,22 @@ public class FileStorageService {
      */
     public String fileDownload(String key, String originalFilename) {
         return generateDownloadUrl(key, originalFilename);
+    }
+    public byte[] fileDownload(String key) {
+        GetObjectRequest objectRequest = GetObjectRequest.builder()
+                .bucket(storageproperties.getBucket())
+                .key(key)
+                .build();
+
+         try{
+             return client.getObjectAsBytes(objectRequest).asByteArray();
+         }catch(NoSuchKeyException e){
+             log.error("文件不存在，key: {}", key, e);
+             throw new BusinessException(FileErrorCode.FILE_NOT_FOUND, e);
+         }catch (S3Exception | SdkClientException e) {
+            log.error("从对象存储下载文件失败，key: {}", key, e);
+            throw new BusinessException(FileErrorCode.FILE_DOWNLOAD_FAILED, e);
+         }
     }
 
     /** 为下载响应设置附件方式和 UTF-8 文件名，再将响应头参数纳入签名。 */

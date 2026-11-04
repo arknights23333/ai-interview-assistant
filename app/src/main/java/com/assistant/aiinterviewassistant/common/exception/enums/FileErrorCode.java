@@ -37,7 +37,12 @@ public enum FileErrorCode implements BusinessErrorCode {
     FILE_HASH_FAILED(50011, HttpStatus.INTERNAL_SERVER_ERROR, "文件哈希计算失败，请稍后重试"),
 
     /** 文档解析失败，无法提取正文。 */
-    FILE_PARSE_ERROR(50012, HttpStatus.INTERNAL_SERVER_ERROR, "文件解析失败，请检查文件是否损坏或更换文件");
+    FILE_PARSE_ERROR(50012, HttpStatus.INTERNAL_SERVER_ERROR, "文件解析失败，请检查文件是否损坏或更换文件"),
+
+    /** 对象存储中的文件不存在。 */
+    FILE_NOT_FOUND(40410, HttpStatus.NOT_FOUND, "文件不存在或已被删除"),
+    /** 从对象存储读取文件内容失败。 */
+    FILE_DOWNLOAD_FAILED(50013, HttpStatus.INTERNAL_SERVER_ERROR, "文件下载失败，请稍后重试");
     private final int code;
     private final HttpStatus httpStatus;
     private final String message;

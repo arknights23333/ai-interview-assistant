@@ -4,6 +4,7 @@ package com.assistant.aiinterviewassistant.infrastructure.document.service;
 import com.assistant.aiinterviewassistant.common.exception.enums.FileErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.exception.BusinessException;
 import com.assistant.aiinterviewassistant.infrastructure.document.NoOpEmbeddedDocumentExtractor;
+import com.assistant.aiinterviewassistant.infrastructure.storage.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.exception.TikaException;
@@ -34,6 +35,8 @@ public class DocumentParseService {
     private static final int MAX_TEXT_LENGTH=10*1024*1024;
 
     private final TextCleaningService textCleaningService;
+
+    private final FileStorageService storageService;
     /**
      * 解析上传的文件，提取文本内容
      *
@@ -54,6 +57,12 @@ public class DocumentParseService {
     }
 
     }
+
+    /**
+     * 解析字节数组，提取文本内容
+     * @param bytes
+     * @return
+     */
     public String parseContent(byte[] bytes) {
         if (bytes == null || bytes.length == 0) {
             throw new BusinessException(FileErrorCode.FILE_EMPTY);
@@ -65,6 +74,15 @@ public class DocumentParseService {
         } catch (TikaException | IOException | SAXException e) {
             throw new BusinessException(FileErrorCode.FILE_PARSE_ERROR, e);
         }
+    }/**
+     * 解析对象存储服务中的文件，提取文本内容
+     * @param storageKey
+     * @return
+     */
+    public String parseContent(String storageKey){
+        byte[] bytes = storageService.fileDownload(storageKey);
+
+        return parseContent(bytes);
     }
 
     /**
