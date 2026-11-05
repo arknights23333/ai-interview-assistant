@@ -96,10 +96,10 @@ public class ResumeController {
      *
      * @param dto 删除范围
      * @param jwt 当前登录身份
-     * @return 删除结果
+     * @return 本次未被数据库删除的简历 ID
      */
     @DeleteMapping("/delete")
-    public R<Integer> deleteResume(
+    public R<List<Long>> deleteResume(
             @Valid @RequestBody DeleteResumeDto dto,
             @AuthenticationPrincipal Jwt jwt) {
         return resumeService.deleteResume(dto, Long.valueOf(jwt.getSubject()));

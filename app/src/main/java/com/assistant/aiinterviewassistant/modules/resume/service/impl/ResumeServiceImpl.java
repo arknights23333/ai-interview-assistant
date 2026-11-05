@@ -1,5 +1,4 @@
 package com.assistant.aiinterviewassistant.modules.resume.service.impl;
-import com.assistant.aiinterviewassistant.infrastructure.storage.domain.StorageDeleteModels;
 import com.assistant.aiinterviewassistant.modules.resume.domain.dto.DeleteResumeDto;
 
 import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
@@ -27,10 +26,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.OffsetDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -261,7 +261,8 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
     }
 
     @Override
-    public R<Integer> deleteResume(DeleteResumeDto dto, Long userId) {
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public R<List<Long>> deleteResume(DeleteResumeDto dto, Long userId) {
         List<Long> resumeIds = dto.getResumeIds();
         boolean hasResumeIds = resumeIds != null && !resumeIds.isEmpty();
         // 必须且只能选择一种删除范围。
@@ -269,36 +270,42 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
             throw new BusinessException(ResumeErrorCode.INVALID_DELETE_SCOPE);
         }
 
-        Map<String,Long> idByKeys =new HashMap<>();
-        //删全部，获取全部key
-        if(dto.isDeleteAll()){
-            List<ResumePo> resumes = list(new LambdaQueryWrapper<ResumePo>()
-                    .select(ResumePo::getId, ResumePo::getStorageKey)
-                    .eq(ResumePo::getUserId, userId)
-                    .isNotNull(ResumePo::getDeleteTime));
-            idByKeys = resumes.stream().collect(Collectors.toMap(ResumePo::getStorageKey, ResumePo::getId));
-        }else{
-            //删指定，只拿指定key
-            List<ResumePo> resumes = list(new LambdaQueryWrapper<ResumePo>()
-                    .select(ResumePo::getId, ResumePo::getStorageKey)
-                    .eq(ResumePo::getUserId, userId)
-                    .in(ResumePo::getId, resumeIds)
-                    .isNotNull(ResumePo::getDeleteTime));
-            idByKeys = resumes.stream().collect(Collectors.toMap(ResumePo::getStorageKey,ResumePo::getId));
-        }
-        StorageDeleteModels.BatchDeleteResult<Long> deleteResult = fileStorageService.fileDeleteBatch(idByKeys);
-
-        List<Long> successIds = deleteResult.successIds();
-        int deleteResultDb = 0;
-        if(successIds!=null&& !successIds.isEmpty()){
-            deleteResultDb=getBaseMapper().delete(new LambdaQueryWrapper<ResumePo>()
-                    .in(ResumePo::getId, successIds)
-                    .eq(ResumePo::getUserId, userId)
-                    .isNotNull(ResumePo::getDeleteTime));
-
+        // 清空回收站时先确定本次处理的 ID 范围，用于计算未删掉的记录。
+        List<Long> targetIds = dto.isDeleteAll()
+                ? list(new LambdaQueryWrapper<ResumePo>()
+                        .select(ResumePo::getId)
+                        .eq(ResumePo::getUserId, userId)
+                        .isNotNull(ResumePo::getDeleteTime))
+                        .stream().map(ResumePo::getId).toList()
+                : resumeIds.stream().distinct().toList();
+        if (targetIds.isEmpty()) {
+            return R.ok(List.of());
         }
 
-        return R.ok(deleteResultDb);
+        // 在事务外执行单条删除语句。Mapper 返回后，再清理已提交删除的对象。
+        List<ResumePo> deletedResumes = getBaseMapper().deleteRecycledReturning(userId, targetIds);
+        Set<Long> deletedIds = deletedResumes.stream()
+                .map(ResumePo::getId)
+                .collect(Collectors.toSet());
+        List<Long> undeletedIds = targetIds.stream()
+                .filter(id -> !deletedIds.contains(id))
+                .toList();
+
+        if (!deletedResumes.isEmpty()) {
+            Map<String, Long> idByKey = deletedResumes.stream()
+                    .collect(Collectors.toMap(ResumePo::getStorageKey, ResumePo::getId));
+            try {
+                var storageResult = fileStorageService.fileDeleteBatch(idByKey);
+                for (var failure : storageResult.failures()) {
+                    log.warn("简历原文件待补删 resumeId={} storageKey={} code={} s3Code={} reason={}",
+                            failure.id(), failure.key(), failure.code(), failure.s3Code(), failure.errorMessage());
+                }
+            } catch (RuntimeException e) {
+                // 删库已经提交，保留旧对象键和对应简历 ID，便于后台人工补删。
+                log.error("简历原文件清理异常，待补删对象及简历 ID={}", idByKey, e);
+            }
+        }
+        return R.ok(undeletedIds);
     }
 
     /**

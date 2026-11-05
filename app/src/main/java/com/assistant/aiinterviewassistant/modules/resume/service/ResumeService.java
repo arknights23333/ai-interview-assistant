@@ -1,4 +1,6 @@
 package com.assistant.aiinterviewassistant.modules.resume.service;
+
+import java.util.List;
 import com.assistant.aiinterviewassistant.modules.resume.domain.dto.DeleteResumeDto;
 
 import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
@@ -59,7 +61,7 @@ public interface ResumeService extends IService<ResumePo> {
      *
      * @param dto 删除范围，指定 ID 与全部删除模式不能同时使用
      * @param userId 当前登录用户 ID
-     * @return 删除结果
+     * @return 本次未被数据库删除的简历 ID
      */
-    R<Integer> deleteResume(DeleteResumeDto dto, Long userId);
+    R<List<Long>> deleteResume(DeleteResumeDto dto, Long userId);
 }
