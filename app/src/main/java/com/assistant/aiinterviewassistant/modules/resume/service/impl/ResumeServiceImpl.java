@@ -88,7 +88,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
             throw new BusinessException(FileErrorCode.FILE_TYPE_NOT_SUPPORTED);
         }
 
-        String hash = fileHashService.calculateHash(file);
+        String hash = fileHashService.calculateHashWithFilename(file);
 
         ResumePo exist = filehasExist(hash, id);
         if(exist != null){

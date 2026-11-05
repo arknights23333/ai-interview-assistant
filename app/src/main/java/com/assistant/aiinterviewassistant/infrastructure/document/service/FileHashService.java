@@ -8,8 +8,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Objects;
 
 /**
  * 文件哈希服务类,计算文件哈希
@@ -22,10 +25,14 @@ public class FileHashService {
      * @param inputStream 输入流，调用方负责关闭
      * @return 转换成16进制的文件哈希值
      */
-    public String calculateHash(InputStream inputStream)
-    {
+    public String calculateHash(InputStream inputStream) {
+        return calculateHash(inputStream, new byte[0]);
+    }
+
+    private String calculateHash(InputStream inputStream, byte[] prefix) {
         try{
             MessageDigest digest=MessageDigest.getInstance("SHA-256");
+            digest.update(prefix);
             byte[] buffer=new byte[8192];
             int bytesRead=0;
             while((bytesRead = inputStream.read(buffer))!=-1){
@@ -65,6 +72,26 @@ public class FileHashService {
             throw new BusinessException(FileErrorCode.FILE_READ_FAILED, e);
         }
     }
+
+    /**
+     * 将原始文件名和文件内容一起计算为一个 SHA-256 哈希。
+     */
+    public String calculateHashWithFilename(MultipartFile file) {
+        String fileName = Objects.toString(file.getOriginalFilename(), "");
+        byte[] fileNameBytes = fileName.getBytes(StandardCharsets.UTF_8);
+        // 在文件名之前写入字节长度，明确文件名与正文的边界。
+        byte[] prefix = ByteBuffer.allocate(Integer.BYTES + fileNameBytes.length)
+                .putInt(fileNameBytes.length)
+                .put(fileNameBytes)
+                .array();
+
+        try (InputStream stream = file.getInputStream()) {
+            return calculateHash(stream, prefix);
+        } catch (IOException e) {
+            throw new BusinessException(FileErrorCode.FILE_READ_FAILED, e);
+        }
+    }
+
     /**
      * 字节转16进制
      * @param bytes
