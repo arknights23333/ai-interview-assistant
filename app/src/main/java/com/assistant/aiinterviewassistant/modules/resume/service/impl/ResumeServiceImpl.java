@@ -225,39 +225,34 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
     }
 
     @Override
-    public R<Void> updateRecycleStatus(Long resumeId, Boolean recycleStatus, Long userId) {
-        ResumePo resume=getOne(new LambdaQueryWrapper<ResumePo>()
-                .eq(ResumePo::getId, resumeId)
-                .eq(ResumePo::getUserId, userId ));
-        if(resume==null){
+    @Transactional
+    public R<Void> updateRecycleStatus(List<Long> resumeIds, boolean recycleStatus, Long userId) {
+        if (resumeIds == null || resumeIds.isEmpty()) {
             throw new BusinessException(ResumeErrorCode.RESUME_NOT_FOUND);
         }
-        // 已经处于目标状态，直接返回，不重复更新删除时间
-        boolean alreadyRestored = recycleStatus && resume.getDeleteTime() == null;
-        boolean alreadyRecycled = !recycleStatus && resume.getDeleteTime() != null;
+        List<Long> targetIds = resumeIds.stream().distinct().toList();
 
-        if (alreadyRestored || alreadyRecycled) {
-            return R.<Void>ok("简历已处于目标状态");
-        }
+        // 只更新需要切换状态的记录，重复移入时保留原删除时间。
+        int updatedRows = getBaseMapper().update(null, new LambdaUpdateWrapper<ResumePo>()
+                .eq(ResumePo::getUserId, userId)
+                .in(ResumePo::getId, targetIds)
+                .isNotNull(recycleStatus, ResumePo::getDeleteTime)
+                .isNull(!recycleStatus, ResumePo::getDeleteTime)
+                .set(ResumePo::getDeleteTime, recycleStatus ? null : OffsetDateTime.now()));
 
-        if(recycleStatus){
-
-            boolean result = update(new LambdaUpdateWrapper<ResumePo>()
-                    .eq(ResumePo::getId, resumeId)
-                    .set(ResumePo::getDeleteTime, null));
-            if(!result){
-                throw new BusinessException(ResumeErrorCode.RESUME_UPDATE_FAILED);
+        if (updatedRows < targetIds.size()) {
+            // 未更新的记录可能已处于目标状态，也可能不存在或不属于当前用户。
+            long reachedTarget = count(new LambdaQueryWrapper<ResumePo>()
+                    .eq(ResumePo::getUserId, userId)
+                    .in(ResumePo::getId, targetIds)
+                    .isNull(recycleStatus, ResumePo::getDeleteTime)
+                    .isNotNull(!recycleStatus, ResumePo::getDeleteTime));
+            if (reachedTarget != targetIds.size()) {
+                throw new BusinessException(ResumeErrorCode.RESUME_NOT_FOUND);
             }
         }
-        else {
-            boolean result = update(new LambdaUpdateWrapper<ResumePo>()
-                    .eq(ResumePo::getId, resumeId)
-                    .set(ResumePo::getDeleteTime, OffsetDateTime.now()));
-            if(!result){
-                throw new BusinessException(ResumeErrorCode.RESUME_UPDATE_FAILED);
-            }
-        }
-        return R.<Void>ok("回收站状态更新成功");
+
+        return R.<Void>ok(updatedRows == 0 ? "简历已处于目标状态" : "回收站状态更新成功");
     }
 
     @Override

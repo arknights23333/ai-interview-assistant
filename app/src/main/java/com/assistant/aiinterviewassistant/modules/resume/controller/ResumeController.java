@@ -1,4 +1,5 @@
 package com.assistant.aiinterviewassistant.modules.resume.controller;
+import com.assistant.aiinterviewassistant.modules.resume.domain.dto.BatchUpdateResumeRecycleStatusDto;
 import com.assistant.aiinterviewassistant.modules.resume.domain.dto.DeleteResumeDto;
 import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.response.R;
@@ -88,7 +89,22 @@ public class ResumeController {
             @Valid @RequestBody UpdateResumeRecycleStatusDto dto,
             @AuthenticationPrincipal Jwt jwt) {
         return resumeService.updateRecycleStatus(
-                resumeId, dto.getRecycleStatus(), Long.valueOf(jwt.getSubject()));
+                List.of(resumeId), dto.getRecycleStatus(), Long.valueOf(jwt.getSubject()));
+    }
+
+    /**
+     * 批量更新简历回收站状态。
+     *
+     * @param dto 简历 ID 列表和目标状态
+     * @param jwt 当前登录身份
+     * @return 状态更新结果
+     */
+    @PutMapping("/recycle-status")
+    public R<Void> updateRecycleStatusBatch(
+            @Valid @RequestBody BatchUpdateResumeRecycleStatusDto dto,
+            @AuthenticationPrincipal Jwt jwt) {
+        return resumeService.updateRecycleStatus(
+                dto.getResumeIds(), dto.getRecycleStatus(), Long.valueOf(jwt.getSubject()));
     }
 
     /**
