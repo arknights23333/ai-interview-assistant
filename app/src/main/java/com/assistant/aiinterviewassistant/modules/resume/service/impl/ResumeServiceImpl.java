@@ -113,14 +113,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
 
     @Override
     public R<Void> parseResume(Long resumeId, Long userId) {
-        ResumePo resume = getOne(new LambdaQueryWrapper<ResumePo>()
-                .eq(ResumePo::getId, resumeId)
-                .eq(ResumePo::getUserId, userId)
-                .isNull(ResumePo::getDeleteTime));
-
-        if (resume == null) {
-            throw new BusinessException(FileErrorCode.FILE_NOT_FOUND);
-        }
+        ResumePo resume = getAvailableResumeOrThrow(resumeId, userId);
         if (ResumeParseStatusConstant.PROCESSING.equals(resume.getParseStatus())) {
             return R.<Void>ok("解析任务正在处理，请勿重复提交");
         }
@@ -199,15 +192,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
 
     @Override
     public R<ResumeVo> getResume(Long resumeId, Long userId) {
-        ResumePo resume =getOne(new LambdaQueryWrapper<ResumePo>()
-                .eq(ResumePo::getId, resumeId)
-                .eq(ResumePo::getUserId, userId)
-                .isNull(ResumePo::getDeleteTime));
-
-        if(resume==null)
-        {
-            throw new BusinessException(ResumeErrorCode.RESUME_NOT_FOUND);
-        }
+        ResumePo resume = getAvailableResumeOrThrow(resumeId, userId);
         ResumeVo vo =new ResumeVo();
         vo.setId(resume.getId());
         vo.setResumeContent(resume.getResumeContent());
@@ -231,6 +216,25 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
         return R.ok(convertPage(result, ResumeVo.class));
     }
 
+    /**
+     * 获取当前用户未删除的简历，不存在或不可访问时抛出业务异常。
+     * 此处不要求正文解析成功，具体解析状态由调用方判断。
+     *
+     * @param resumeId 简历 ID
+     * @param userId 当前用户 ID
+     * @return 当前用户可访问且未删除的简历
+     */
+    private ResumePo getAvailableResumeOrThrow(Long resumeId, Long userId) {
+        ResumePo resume = getOne(new LambdaQueryWrapper<ResumePo>()
+                .eq(ResumePo::getId, resumeId)
+                .eq(ResumePo::getUserId, userId)
+                .isNull(ResumePo::getDeleteTime));
+
+        if (resume == null) {
+            throw new BusinessException(ResumeErrorCode.RESUME_NOT_FOUND);
+        }
+        return resume;
+    }
     /**
      * 保留分页信息，并将当前页记录逐条属性对拷为目标类型。
      *
