@@ -1,4 +1,5 @@
 package com.assistant.aiinterviewassistant.modules.resume.service;
+import com.assistant.aiinterviewassistant.modules.resume.domain.dto.DeleteResumeDto;
 
 import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.response.R;
@@ -52,4 +53,13 @@ public interface ResumeService extends IService<ResumePo> {
      * @return
      */
     R<Void> updateRecycleStatus(Long resumeId, Boolean recycleStatus, Long userId);
+
+    /**
+     * 删除当前用户回收站中的简历。
+     *
+     * @param dto 删除范围，指定 ID 与全部删除模式不能同时使用
+     * @param userId 当前登录用户 ID
+     * @return 删除结果
+     */
+    R<Integer> deleteResume(DeleteResumeDto dto, Long userId);
 }

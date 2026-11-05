@@ -1,4 +1,5 @@
 package com.assistant.aiinterviewassistant.modules.resume.controller;
+import com.assistant.aiinterviewassistant.modules.resume.domain.dto.DeleteResumeDto;
 import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.response.R;
 import com.assistant.aiinterviewassistant.modules.resume.domain.dto.UpdateResumeRecycleStatusDto;
@@ -88,5 +89,19 @@ public class ResumeController {
             @AuthenticationPrincipal Jwt jwt) {
         return resumeService.updateRecycleStatus(
                 resumeId, dto.getRecycleStatus(), Long.valueOf(jwt.getSubject()));
+    }
+
+    /**
+     * 删除回收站中的单个、多个或全部简历。
+     *
+     * @param dto 删除范围
+     * @param jwt 当前登录身份
+     * @return 删除结果
+     */
+    @DeleteMapping("/delete")
+    public R<Integer> deleteResume(
+            @Valid @RequestBody DeleteResumeDto dto,
+            @AuthenticationPrincipal Jwt jwt) {
+        return resumeService.deleteResume(dto, Long.valueOf(jwt.getSubject()));
     }
 }

@@ -1,4 +1,6 @@
 package com.assistant.aiinterviewassistant.modules.resume.service.impl;
+import com.assistant.aiinterviewassistant.infrastructure.storage.domain.StorageDeleteModels;
+import com.assistant.aiinterviewassistant.modules.resume.domain.dto.DeleteResumeDto;
 
 import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.exception.enums.FileErrorCode;
@@ -28,9 +30,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -48,6 +54,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
     private final DocumentParseService documentParseService;
 
     private final ThreadPoolExecutor documentParseThreadPoolExecutor;
+
 
     /** 简历文件最大为 10 MiB。 */
     private static final long MAX_RESUME_FILE_SIZE = 10L * 1024 * 1024;
@@ -251,6 +258,47 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
             }
         }
         return R.<Void>ok("回收站状态更新成功");
+    }
+
+    @Override
+    public R<Integer> deleteResume(DeleteResumeDto dto, Long userId) {
+        List<Long> resumeIds = dto.getResumeIds();
+        boolean hasResumeIds = resumeIds != null && !resumeIds.isEmpty();
+        // 必须且只能选择一种删除范围。
+        if (dto.isDeleteAll() == hasResumeIds) {
+            throw new BusinessException(ResumeErrorCode.INVALID_DELETE_SCOPE);
+        }
+
+        Map<String,Long> idByKeys =new HashMap<>();
+        //删全部，获取全部key
+        if(dto.isDeleteAll()){
+            List<ResumePo> resumes = list(new LambdaQueryWrapper<ResumePo>()
+                    .select(ResumePo::getId, ResumePo::getStorageKey)
+                    .eq(ResumePo::getUserId, userId)
+                    .isNotNull(ResumePo::getDeleteTime));
+            idByKeys = resumes.stream().collect(Collectors.toMap(ResumePo::getStorageKey, ResumePo::getId));
+        }else{
+            //删指定，只拿指定key
+            List<ResumePo> resumes = list(new LambdaQueryWrapper<ResumePo>()
+                    .select(ResumePo::getId, ResumePo::getStorageKey)
+                    .eq(ResumePo::getUserId, userId)
+                    .in(ResumePo::getId, resumeIds)
+                    .isNotNull(ResumePo::getDeleteTime));
+            idByKeys = resumes.stream().collect(Collectors.toMap(ResumePo::getStorageKey,ResumePo::getId));
+        }
+        StorageDeleteModels.BatchDeleteResult<Long> deleteResult = fileStorageService.fileDeleteBatch(idByKeys);
+
+        List<Long> successIds = deleteResult.successIds();
+        int deleteResultDb = 0;
+        if(successIds!=null&& !successIds.isEmpty()){
+            deleteResultDb=getBaseMapper().delete(new LambdaQueryWrapper<ResumePo>()
+                    .in(ResumePo::getId, successIds)
+                    .eq(ResumePo::getUserId, userId)
+                    .isNotNull(ResumePo::getDeleteTime));
+
+        }
+
+        return R.ok(deleteResultDb);
     }
 
     /**

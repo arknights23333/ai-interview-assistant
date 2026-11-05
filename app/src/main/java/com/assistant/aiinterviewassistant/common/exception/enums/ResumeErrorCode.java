@@ -10,6 +10,9 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum ResumeErrorCode implements BusinessErrorCode {
 
+    /** 必须指定要删除的简历，或者选择清空回收站。 */
+    INVALID_DELETE_SCOPE(40011, HttpStatus.BAD_REQUEST, "请选择要删除的简历，或单独选择清空回收站"),
+
     /** 当前用户可访问的有效简历不存在，包含不属于当前用户或已移入回收站。 */
     RESUME_NOT_FOUND(40402, HttpStatus.NOT_FOUND, "简历不存在或已被删除"),
 
@@ -29,7 +32,10 @@ public enum ResumeErrorCode implements BusinessErrorCode {
     PARSE_TASK_BUSY(50301, HttpStatus.SERVICE_UNAVAILABLE, "解析任务繁忙，请稍后重试"),
 
     /** 简历信息或回收站状态更新失败。 */
-    RESUME_UPDATE_FAILED(50014, HttpStatus.INTERNAL_SERVER_ERROR, "简历更新失败，请稍后重试");
+    RESUME_UPDATE_FAILED(50014, HttpStatus.INTERNAL_SERVER_ERROR, "简历更新失败，请稍后重试"),
+
+    /** 彻底删除简历或清空回收站失败。 */
+    RESUME_DELETE_FAILED(50015, HttpStatus.INTERNAL_SERVER_ERROR, "简历删除失败，请稍后重试");
 
     private final int code;
     private final HttpStatus httpStatus;
