@@ -39,6 +39,14 @@ public class R<T> {
         r.setData(data);
         return r;
     }
+    public static <T> R<T> ok(T data,String meg ){
+        R<T> r = new R<>();
+        r.setCode(SUCCESS);
+        r.setMsg(meg);
+        r.setData(data);
+        return r;
+    }
+
 
     public static <T> R<T> fail() {
         return fail(ERROR, "操作失败");

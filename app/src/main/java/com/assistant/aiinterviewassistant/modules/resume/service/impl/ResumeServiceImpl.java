@@ -92,7 +92,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
 
         ResumePo exist = filehasExist(hash, id);
         if(exist != null){
-            return R.ok(new ResumeUploadVo(exist.getId()));
+            return R.ok(new ResumeUploadVo(exist.getId()), "已复用原来简历");
         }
         String fileKey = fileStorageService.uploadResume(file);
 
@@ -116,7 +116,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
             throw e;
         }
 
-        return R.ok(new ResumeUploadVo(resume.getId()));
+        return R.ok(new ResumeUploadVo(resume.getId()), "新简历上传成功");
     }
 
     @Override
