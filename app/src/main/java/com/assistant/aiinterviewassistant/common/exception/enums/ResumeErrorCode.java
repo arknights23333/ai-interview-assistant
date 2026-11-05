@@ -26,7 +26,10 @@ public enum ResumeErrorCode implements BusinessErrorCode {
     RESUME_CONTENT_EMPTY(42201, HttpStatus.UNPROCESSABLE_ENTITY, "未提取到有效正文，请检查文件是否为扫描件或内容为空"),
 
     /** 解析执行器无法接受新任务，例如线程池队列已满。 */
-    PARSE_TASK_BUSY(50301, HttpStatus.SERVICE_UNAVAILABLE, "解析任务繁忙，请稍后重试");
+    PARSE_TASK_BUSY(50301, HttpStatus.SERVICE_UNAVAILABLE, "解析任务繁忙，请稍后重试"),
+
+    /** 简历信息或回收站状态更新失败。 */
+    RESUME_UPDATE_FAILED(50014, HttpStatus.INTERNAL_SERVER_ERROR, "简历更新失败，请稍后重试");
 
     private final int code;
     private final HttpStatus httpStatus;

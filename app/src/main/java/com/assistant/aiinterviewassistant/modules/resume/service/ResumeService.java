@@ -10,8 +10,6 @@ import com.baomidou.mybatisplus.spring.service.IService;
 import org.jspecify.annotations.Nullable;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-
 public interface ResumeService extends IService<ResumePo> {
     /**
      * 上传简历
@@ -44,4 +42,14 @@ public interface ResumeService extends IService<ResumePo> {
      * @return
      */
     R<Page<ResumeVo>> getResumeList(Long userId, PageQuery pageQuery);
+
+    /**
+     * 更新简历回收站状态
+     *
+     * @param resumeId
+     * @param recycleStatus true 恢复，false 移入回收站
+     * @param userId 当前登录用户 ID
+     * @return
+     */
+    R<Void> updateRecycleStatus(Long resumeId, Boolean recycleStatus, Long userId);
 }

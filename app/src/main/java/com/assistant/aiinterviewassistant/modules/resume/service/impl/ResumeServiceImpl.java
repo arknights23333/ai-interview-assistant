@@ -27,6 +27,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.OffsetDateTime;
 import java.util.Set;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.RejectedExecutionException;
@@ -214,6 +215,42 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
                 .orderByDesc(ResumePo::getCreateAt)
                 .orderByDesc(ResumePo::getId));
         return R.ok(convertPage(result, ResumeVo.class));
+    }
+
+    @Override
+    public R<Void> updateRecycleStatus(Long resumeId, Boolean recycleStatus, Long userId) {
+        ResumePo resume=getOne(new LambdaQueryWrapper<ResumePo>()
+                .eq(ResumePo::getId, resumeId)
+                .eq(ResumePo::getUserId, userId ));
+        if(resume==null){
+            throw new BusinessException(ResumeErrorCode.RESUME_NOT_FOUND);
+        }
+        // 已经处于目标状态，直接返回，不重复更新删除时间
+        boolean alreadyRestored = recycleStatus && resume.getDeleteTime() == null;
+        boolean alreadyRecycled = !recycleStatus && resume.getDeleteTime() != null;
+
+        if (alreadyRestored || alreadyRecycled) {
+            return R.<Void>ok("简历已处于目标状态");
+        }
+
+        if(recycleStatus){
+
+            boolean result = update(new LambdaUpdateWrapper<ResumePo>()
+                    .eq(ResumePo::getId, resumeId)
+                    .set(ResumePo::getDeleteTime, null));
+            if(!result){
+                throw new BusinessException(ResumeErrorCode.RESUME_UPDATE_FAILED);
+            }
+        }
+        else {
+            boolean result = update(new LambdaUpdateWrapper<ResumePo>()
+                    .eq(ResumePo::getId, resumeId)
+                    .set(ResumePo::getDeleteTime, OffsetDateTime.now()));
+            if(!result){
+                throw new BusinessException(ResumeErrorCode.RESUME_UPDATE_FAILED);
+            }
+        }
+        return R.<Void>ok("回收站状态更新成功");
     }
 
     /**
