@@ -56,7 +56,7 @@ public class AuthController {
     }
 
     /**
-     * 推出登录接口
+     * 退出登录接口
      * @param jwt
      * @return 滚木
      */
