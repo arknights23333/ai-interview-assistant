@@ -95,7 +95,7 @@ public class ResumeController {
             @Valid @RequestBody UpdateResumeRecycleStatusDto dto,
             @AuthenticationPrincipal Jwt jwt) {
         return resumeService.updateRecycleStatus(
-                List.of(resumeId), dto.getRecycleStatus(), Long.valueOf(jwt.getSubject()));
+                resumeId, dto.getRecycleStatus(), Long.valueOf(jwt.getSubject()));
     }
 
     /**
@@ -103,13 +103,13 @@ public class ResumeController {
      *
      * @param dto 简历 ID 列表和目标状态
      * @param jwt 当前登录身份
-     * @return 状态更新结果
+     * @return 本次未达到目标状态的简历 ID
      */
     @PutMapping("/recycle-status")
-    public R<Void> updateRecycleStatusBatch(
+    public R<List<Long>> updateRecycleStatusBatch(
             @Valid @RequestBody BatchUpdateResumeRecycleStatusDto dto,
             @AuthenticationPrincipal Jwt jwt) {
-        return resumeService.updateRecycleStatus(
+        return resumeService.updateRecycleStatusBatch(
                 dto.getResumeIds(), dto.getRecycleStatus(), Long.valueOf(jwt.getSubject()));
     }
 

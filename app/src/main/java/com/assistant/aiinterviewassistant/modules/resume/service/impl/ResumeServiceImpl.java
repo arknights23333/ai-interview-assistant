@@ -309,8 +309,16 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
     }
 
     @Override
-    @Transactional
-    public R<Void> updateRecycleStatus(List<Long> resumeIds, boolean recycleStatus, Long userId) {
+    public R<Void> updateRecycleStatus(Long resumeId, boolean recycleStatus, Long userId) {
+        R<List<Long>> result = updateRecycleStatusBatch(List.of(resumeId), recycleStatus, userId);
+        if (!result.getData().isEmpty()) {
+            throw new BusinessException(ResumeErrorCode.RESUME_NOT_FOUND);
+        }
+        return R.<Void>ok(result.getMsg());
+    }
+
+    @Override
+    public R<List<Long>> updateRecycleStatusBatch(List<Long> resumeIds, boolean recycleStatus, Long userId) {
         if (resumeIds == null || resumeIds.isEmpty()) {
             throw new BusinessException(ResumeErrorCode.RESUME_NOT_FOUND);
         }
@@ -324,23 +332,27 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
                 .isNull(!recycleStatus, ResumePo::getDeleteTime)
                 .set(ResumePo::getDeleteTime, recycleStatus ? null : OffsetDateTime.now()));
 
+        List<Long> failedIds = List.of();
         if (updatedRows < targetIds.size()) {
-            // 未更新的记录可能已处于目标状态，也可能不存在或不属于当前用户。
-            long reachedTarget = count(new LambdaQueryWrapper<ResumePo>()
+            // 已经处于目标状态的简历也算成功。
+            Set<Long> reachedTargetIds = list(new LambdaQueryWrapper<ResumePo>()
+                    .select(ResumePo::getId)
                     .eq(ResumePo::getUserId, userId)
                     .in(ResumePo::getId, targetIds)
                     .isNull(recycleStatus, ResumePo::getDeleteTime)
-                    .isNotNull(!recycleStatus, ResumePo::getDeleteTime));
-            if (reachedTarget != targetIds.size()) {
-                log.warn("回收站操作未覆盖全部简历，事务将回滚，userId={} restore={} requested={} reachedTarget={}",
-                        userId, recycleStatus, targetIds.size(), reachedTarget);
-                throw new BusinessException(ResumeErrorCode.RESUME_NOT_FOUND);
-            }
+                    .isNotNull(!recycleStatus, ResumePo::getDeleteTime))
+                    .stream()
+                    .map(ResumePo::getId)
+                    .collect(Collectors.toSet());
+            failedIds = targetIds.stream().filter(id -> !reachedTargetIds.contains(id)).toList();
         }
 
-        log.info("简历回收站操作执行完成，userId={} restore={} requested={} updated={}",
-                userId, recycleStatus, targetIds.size(), updatedRows);
-        return R.<Void>ok(updatedRows == 0 ? "简历已处于目标状态" : "回收站状态更新成功");
+        log.info("简历回收站操作执行完成，userId={} restore={} requested={} updated={} failed={}",
+                userId, recycleStatus, targetIds.size(), updatedRows, failedIds.size());
+        if (!failedIds.isEmpty()) {
+            return R.ok(failedIds, "有简历未达到目标回收站状态");
+        }
+        return R.ok(failedIds, updatedRows == 0 ? "简历已处于目标状态" : "回收站状态更新成功");
     }
 
     @Override
