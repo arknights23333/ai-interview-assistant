@@ -13,6 +13,9 @@ public enum ResumeErrorCode implements BusinessErrorCode {
     /** 必须指定要删除的简历，或者选择清空回收站。 */
     INVALID_DELETE_SCOPE(40011, HttpStatus.BAD_REQUEST, "请选择要删除的简历，或单独选择清空回收站"),
 
+    /** 批量上传的简历数量超过五份。 */
+    BATCH_UPLOAD_LIMIT_EXCEEDED(40012, HttpStatus.BAD_REQUEST, "一次最多上传五份简历"),
+
     /** 当前用户可访问的有效简历不存在，包含不属于当前用户或已移入回收站。 */
     RESUME_NOT_FOUND(40402, HttpStatus.NOT_FOUND, "简历不存在或已被删除"),
 
@@ -35,7 +38,13 @@ public enum ResumeErrorCode implements BusinessErrorCode {
     RESUME_UPDATE_FAILED(50014, HttpStatus.INTERNAL_SERVER_ERROR, "简历更新失败，请稍后重试"),
 
     /** 彻底删除简历或清空回收站失败。 */
-    RESUME_DELETE_FAILED(50015, HttpStatus.INTERNAL_SERVER_ERROR, "简历删除失败，请稍后重试");
+    RESUME_DELETE_FAILED(50015, HttpStatus.INTERNAL_SERVER_ERROR, "简历删除失败，请稍后重试"),
+
+    /** 上传文件后保存简历记录失败。 */
+    RESUME_SAVE_FAILED(50016, HttpStatus.INTERNAL_SERVER_ERROR, "简历保存失败，请稍后重试"),
+
+    /** 上传前查询已有简历或恢复回收站中的简历失败。 */
+    RESUME_UPLOAD_CHECK_FAILED(50017, HttpStatus.INTERNAL_SERVER_ERROR, "检查或恢复已有简历失败，请稍后重试");
 
     private final int code;
     private final HttpStatus httpStatus;

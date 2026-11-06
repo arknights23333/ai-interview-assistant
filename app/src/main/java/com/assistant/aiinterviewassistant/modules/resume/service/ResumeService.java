@@ -6,6 +6,7 @@ import com.assistant.aiinterviewassistant.modules.resume.domain.dto.DeleteResume
 import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.response.R;
 import com.assistant.aiinterviewassistant.modules.resume.domain.po.ResumePo;
+import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeUploadBatchVo;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeUploadVo;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeVo;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -64,4 +65,12 @@ public interface ResumeService extends IService<ResumePo> {
      * @return 本次未被数据库删除的简历 ID
      */
     R<List<Long>> deleteResume(DeleteResumeDto dto, Long userId);
+
+    /**
+     * 批量上传简历
+     * @param userId 用户id
+     * @param files 简历文件列表
+     * @return
+     */
+    R<List<ResumeUploadBatchVo>> uploadBatch(Long userId, List<MultipartFile> files);
 }

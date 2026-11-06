@@ -4,6 +4,7 @@ import com.assistant.aiinterviewassistant.modules.resume.domain.dto.DeleteResume
 import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.response.R;
 import com.assistant.aiinterviewassistant.modules.resume.domain.dto.UpdateResumeRecycleStatusDto;
+import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeUploadBatchVo;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeUploadVo;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeVo;
 import com.assistant.aiinterviewassistant.modules.resume.service.ResumeService;
@@ -59,7 +60,12 @@ public class ResumeController {
     public R<ResumeUploadVo> upload(@AuthenticationPrincipal Jwt jwt, MultipartFile file) {
         return resumeService.upload(Long.valueOf(jwt.getSubject()), file);
     }
-
+    @PostMapping("/uploadBatch")
+    public R<List<ResumeUploadBatchVo>> uploadBatch(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(value = "files", required = false) List<MultipartFile> files) {
+        return resumeService.uploadBatch(Long.valueOf(jwt.getSubject()), files);
+    }
 
     /**
      * 提交当前用户的简历正文解析任务，成功响应不代表解析已完成。
@@ -68,7 +74,7 @@ public class ResumeController {
      * @param resumeId 简历 ID
      * @return 解析任务提交结果
      */
-    @PostMapping("/{resumeId}/parse")
+    @PostMapping("/parse/{resumeId}")
     public R<Void> parseResume(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable("resumeId") Long resumeId) {
