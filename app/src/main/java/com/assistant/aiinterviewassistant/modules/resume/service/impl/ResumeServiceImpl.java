@@ -26,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.BeanUtils;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -279,36 +280,53 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
                         e.getMessage()));
                 continue;
             }
-           try{
-               //落库，失败就清理对象存储
-               if(!save(resume)){
-                   throw new IllegalStateException("保存简历记录失败");
-               }
-           }catch(RuntimeException e){
-               cleanupUploadedFile(resume.getStorageKey(), e);
-               log.error("批量上传保存简历失败，userId={} index={}", userId, result.index(), e);
-               ResumeErrorCode error = ResumeErrorCode.RESUME_SAVE_FAILED;
-               uploadResults.set(result.index(), new ResumeUploadBatchVo(
-                       result.index(),
-                       result.filename(),
-                       null,
-                       ResumeUploadBatchVo.Status.FAILED,
-                       String.valueOf(error.getCode()),
-                       error.getMessage()
-               ));
+            try {
+                if (!save(resume)) {
+                    throw new IllegalStateException("保存简历记录失败");
+                }
+            } catch (RuntimeException e) {
+                cleanupUploadedFile(resume.getStorageKey(), e);
+                if (e instanceof DuplicateKeyException) {
+                    // 重复键也可能来自主键，按用户和文件哈希确认有可复用的简历。
+                    try {
+                        ResumePo concurrentResume = filehasExist(hash, userId);
+                        if (concurrentResume != null) {
+                            log.info("并发上传复用已有简历，resumeId={} userId={}", concurrentResume.getId(), userId);
+                            log.debug("批量上传遇到重复键，userId={} index={}", userId, index, e);
+                            uploadResults.set(index, new ResumeUploadBatchVo(
+                                    index,
+                                    result.filename(),
+                                    concurrentResume.getId(),
+                                    ResumeUploadBatchVo.Status.REUSED,
+                                    null,
+                                    null));
+                            continue;
+                        }
+                    } catch (RuntimeException lookupException) {
+                        e.addSuppressed(lookupException);
+                    }
+                }
+                log.error("批量上传保存简历失败，userId={} index={}", userId, index, e);
+                ResumeErrorCode error = ResumeErrorCode.RESUME_SAVE_FAILED;
+                uploadResults.set(index, new ResumeUploadBatchVo(
+                        index,
+                        result.filename(),
+                        null,
+                        ResumeUploadBatchVo.Status.FAILED,
+                        String.valueOf(error.getCode()),
+                        error.getMessage()));
+                continue;
+            }
 
-               continue;
-           }
-           log.info("简历上传并落库成功，resumeId={} userId={} storageKey={} sizeBytes={}",
-                   resume.getId(), userId, resume.getStorageKey(), files.get(result.index()).getSize());
-            uploadResults.set(result.index(), new ResumeUploadBatchVo(
-                    result.index(),
+            log.info("简历上传并落库成功，resumeId={} userId={} storageKey={} sizeBytes={}",
+                    resume.getId(), userId, resume.getStorageKey(), resume.getFileSize());
+            uploadResults.set(index, new ResumeUploadBatchVo(
+                    index,
                     result.filename(),
                     resume.getId(),
                     ResumeUploadBatchVo.Status.SUCCESS,
                     null,
-                    null
-            ));
+                    null));
 
         }
 
