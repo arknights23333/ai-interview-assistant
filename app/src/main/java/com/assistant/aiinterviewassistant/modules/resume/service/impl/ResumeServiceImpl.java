@@ -92,6 +92,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
 
         ResumePo exist = filehasExist(hash, id);
         if(exist != null){
+            log.info("简历上传复用已有记录，resumeId={} userId={}", exist.getId(), id);
             return R.ok(new ResumeUploadVo(exist.getId()), "已复用原来简历");
         }
         String fileKey = fileStorageService.uploadResume(file);
@@ -116,6 +117,8 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
             throw e;
         }
 
+        log.info("简历上传并落库成功，resumeId={} userId={} storageKey={} sizeBytes={}",
+                resume.getId(), id, fileKey, file.getSize());
         return R.ok(new ResumeUploadVo(resume.getId()), "新简历上传成功");
     }
 
@@ -123,6 +126,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
     public R<Void> parseResume(Long resumeId, Long userId) {
         ResumePo resume = getAvailableResumeOrThrow(resumeId, userId);
         if (ResumeParseStatusConstant.PROCESSING.equals(resume.getParseStatus())) {
+            log.info("简历解析任务已在处理，跳过重复提交，resumeId: {}", resumeId);
             return R.<Void>ok("解析任务正在处理，请勿重复提交");
         }
 
@@ -135,12 +139,15 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
                 .set(ResumePo::getParseStatus, ResumeParseStatusConstant.PROCESSING)
                 .set(ResumePo::getParseError, null));
         if (!accepted) {
+            log.warn("简历解析任务未提交，状态更新未命中，resumeId={} userId={} expectedStatus={}",
+                    resumeId, userId, resume.getParseStatus());
             throw new BusinessException(FileErrorCode.FILE_PARSE_ERROR);
         }
 
         try {
             documentParseThreadPoolExecutor.execute(() -> {
                 try {
+                    log.info("开始执行简历解析任务，resumeId: {}", resumeId);
                     // 在后台线程中完成下载、解析和清洗，不阻塞请求线程。
                     String text = documentParseService.parseContent(resume.getStorageKey());
                     if (text == null || text.isBlank()) {
@@ -156,6 +163,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
                     if (!saved) {
                         throw new IllegalStateException("保存简历解析结果失败");
                     }
+                    log.info("简历解析成功，结果已保存，resumeId: {}", resumeId);
                 } catch (Exception e) {
                     log.error("简历解析失败，resumeId: {}", resumeId, e);
                     String message = e instanceof BusinessException
@@ -195,6 +203,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
             throw new BusinessException(FileErrorCode.FILE_PARSE_ERROR, e);
         }
 
+        log.info("简历解析任务已提交，resumeId: {}，原解析状态: {}", resumeId, resume.getParseStatus());
         return R.<Void>ok("解析任务已提交");
     }
 
@@ -248,10 +257,14 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
                     .isNull(recycleStatus, ResumePo::getDeleteTime)
                     .isNotNull(!recycleStatus, ResumePo::getDeleteTime));
             if (reachedTarget != targetIds.size()) {
+                log.warn("回收站操作未覆盖全部简历，事务将回滚，userId={} restore={} requested={} reachedTarget={}",
+                        userId, recycleStatus, targetIds.size(), reachedTarget);
                 throw new BusinessException(ResumeErrorCode.RESUME_NOT_FOUND);
             }
         }
 
+        log.info("简历回收站操作执行完成，userId={} restore={} requested={} updated={}",
+                userId, recycleStatus, targetIds.size(), updatedRows);
         return R.<Void>ok(updatedRows == 0 ? "简历已处于目标状态" : "回收站状态更新成功");
     }
 
@@ -274,6 +287,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
                         .stream().map(ResumePo::getId).toList()
                 : resumeIds.stream().distinct().toList();
         if (targetIds.isEmpty()) {
+            log.info("回收站没有待删除的简历，userId={}", userId);
             return R.ok(List.of());
         }
 
@@ -285,12 +299,16 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
         List<Long> undeletedIds = targetIds.stream()
                 .filter(id -> !deletedIds.contains(id))
                 .toList();
+        log.info("简历数据库删除完成，userId={} deleteAll={} requested={} deleted={} undeleted={}",
+                userId, dto.isDeleteAll(), targetIds.size(), deletedIds.size(), undeletedIds.size());
 
         if (!deletedResumes.isEmpty()) {
             Map<String, Long> idByKey = deletedResumes.stream()
                     .collect(Collectors.toMap(ResumePo::getStorageKey, ResumePo::getId));
             try {
                 var storageResult = fileStorageService.fileDeleteBatch(idByKey);
+                log.info("简历原文件批量清理完成，userId={} deleted={} failed={}",
+                        userId, storageResult.successIds().size(), storageResult.failures().size());
                 for (var failure : storageResult.failures()) {
                     log.warn("简历原文件待补删 resumeId={} storageKey={} code={} s3Code={} reason={}",
                             failure.id(), failure.key(), failure.code(), failure.s3Code(), failure.errorMessage());
@@ -368,6 +386,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
                 throw new IllegalStateException("恢复简历记录失败");
             }
             resume.setDeleteTime(null);
+            log.info("重复上传已恢复回收站中的简历，resumeId={} userId={}", resume.getId(), id);
         }
         return resume;
     }
@@ -378,6 +397,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
     private void cleanupUploadedFile(String fileKey, RuntimeException originalException) {
         try {
             fileStorageService.deleteResume(fileKey);
+            log.info("已清理落库失败的简历上传对象，storageKey={}", fileKey);
         } catch (RuntimeException cleanupException) {
             originalException.addSuppressed(cleanupException);
             log.error("简历落库失败后清理对象失败，key: {}", fileKey, cleanupException);
