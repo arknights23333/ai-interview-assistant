@@ -6,6 +6,7 @@ import com.assistant.aiinterviewassistant.modules.resume.domain.dto.DeleteResume
 import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.response.R;
 import com.assistant.aiinterviewassistant.modules.resume.domain.po.ResumePo;
+import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeParseBatchVo;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeUploadBatchVo;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeUploadVo;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeVo;
@@ -31,6 +32,9 @@ public interface ResumeService extends IService<ResumePo> {
      * @return 任务提交结果，最终解析状态通过后续查询获取
      */
     R<Void> parseResume(Long resumeId, Long userId);
+
+    /** 批量提交正文解析任务，按去重后的请求顺序返回逐项结果。 */
+    R<List<ResumeParseBatchVo>> parseResumeBatch(List<Long> resumeIds, Long userId);
 
     /**
      * 查询简历

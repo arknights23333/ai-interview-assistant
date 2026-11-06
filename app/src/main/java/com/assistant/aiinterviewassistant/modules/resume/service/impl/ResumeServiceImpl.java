@@ -12,6 +12,8 @@ import com.assistant.aiinterviewassistant.infrastructure.document.service.Docume
 import com.assistant.aiinterviewassistant.infrastructure.storage.service.FileStorageService;
 import com.assistant.aiinterviewassistant.modules.resume.constant.ResumeParseStatusConstant;
 import com.assistant.aiinterviewassistant.modules.resume.domain.po.ResumePo;
+import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeParseBatchVo;
+import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeParseBatchVo.ParseSubmitOutcome;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeUploadBatchVo;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeUploadVo;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeVo;
@@ -61,6 +63,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
 
     /** 简历文件最大为 10 MiB。 */
     private static final long MAX_RESUME_FILE_SIZE = 10L * 1024 * 1024;
+    private static final int MAX_BATCH_UPLOAD_FILES = 5;
 
     /** 允许上传的简历 MIME 类型。 */
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
@@ -69,280 +72,137 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "text/plain"
     );
-    /**
-     * 上传简历到对象存储并落库（没有进行简历解析）
-     * @param id 用户id
-     * @param file 简历文件
-     * @return
-     */
+    /** 上传一份简历，返回新建或复用的简历 ID。 */
     @Override
     public R<ResumeUploadVo> upload(@Nullable Long id, MultipartFile file) {
+        UploadOutcome outcome = uploadOne(id, file);
+        String message = outcome.reused() ? "已复用原来简历" : "新简历上传成功";
+        return R.ok(new ResumeUploadVo(outcome.resumeId()), message);
+    }
+
+    /** 逐份上传简历，按请求顺序返回每份文件的结果。 */
+    @Override
+    public R<List<ResumeUploadBatchVo>> uploadBatch(Long userId, List<MultipartFile> files) {
+        log.info("开始批量上传简历，userId={}", userId);
+        if (files == null || files.isEmpty()) {
+            throw new BusinessException(FileErrorCode.FILE_EMPTY);
+        }
+        if (files.size() > MAX_BATCH_UPLOAD_FILES) {
+            throw new BusinessException(ResumeErrorCode.BATCH_UPLOAD_LIMIT_EXCEEDED);
+        }
+
+        List<ResumeUploadBatchVo> uploadResults = new ArrayList<>(files.size());
+        for (int index = 0; index < files.size(); index++) {
+            MultipartFile file = files.get(index);
+            String filename = file == null ? null : file.getOriginalFilename();
+            try {
+                UploadOutcome outcome = uploadOne(userId, file);
+                ResumeUploadBatchVo.Status status = outcome.reused()
+                        ? ResumeUploadBatchVo.Status.REUSED : ResumeUploadBatchVo.Status.SUCCESS;
+                uploadResults.add(new ResumeUploadBatchVo(index, filename, outcome.resumeId(), status, null, null));
+            } catch (BusinessException e) {
+                if (e.getHttpStatus().is5xxServerError()) {
+                    log.error("批量上传简历失败，userId={} index={} code={}", userId, index, e.getCode(), e);
+                }
+                uploadResults.add(new ResumeUploadBatchVo(
+                        index,
+                        e.getCode() == FileErrorCode.FILE_EMPTY.getCode() ? null : filename,
+                        null,
+                        ResumeUploadBatchVo.Status.FAILED,
+                        String.valueOf(e.getCode()),
+                        e.getMessage()));
+            }
+        }
+        return R.ok(uploadResults);
+    }
+
+    /** 校验、查重并保存一份简历。 */
+    private UploadOutcome uploadOne(@Nullable Long userId, @Nullable MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new BusinessException(FileErrorCode.FILE_EMPTY);
         }
-
         if (file.getSize() > MAX_RESUME_FILE_SIZE) {
             throw new BusinessException(FileErrorCode.FILE_TOO_LARGE);
         }
 
         String contentType = contentTypeDetectionService.detectContentType(file);
-
         if (!ALLOWED_CONTENT_TYPES.contains(contentType)) {
             throw new BusinessException(FileErrorCode.FILE_TYPE_NOT_SUPPORTED);
         }
 
         String hash = fileHashService.calculateHashWithFilename(file);
-
-        ResumePo exist = filehasExist(hash, id);
-        if(exist != null){
-            log.info("简历上传复用已有记录，resumeId={} userId={}", exist.getId(), id);
-            return R.ok(new ResumeUploadVo(exist.getId()), "已复用原来简历");
+        ResumePo existingResume;
+        try {
+            existingResume = filehasExist(hash, userId);
+        } catch (RuntimeException e) {
+            throw new BusinessException(ResumeErrorCode.RESUME_UPLOAD_CHECK_FAILED, e);
         }
-        String fileKey = fileStorageService.uploadResume(file);
+        if (existingResume != null) {
+            log.info("简历上传复用已有记录，resumeId={} userId={}", existingResume.getId(), userId);
+            return new UploadOutcome(existingResume.getId(), true);
+        }
 
+        String fileKey = fileStorageService.uploadResume(file);
         ResumePo resume = new ResumePo();
-        resume.setUserId(id);
+        resume.setUserId(userId);
         resume.setFileHash(hash);
         resume.setFileName(file.getOriginalFilename());
         resume.setFileSize(file.getSize());
         resume.setStorageKey(fileKey);
+        resume.setContentType(contentType);
         resume.setParseStatus(ResumeParseStatusConstant.PENDING);
 
-
-        resume.setContentType(contentType);
-        // TODO 并发重复上传触发唯一约束时，清理本次对象后查询并返回已有有效记录。
         try {
             if (!save(resume)) {
                 throw new IllegalStateException("保存简历记录失败");
             }
         } catch (RuntimeException e) {
             cleanupUploadedFile(fileKey, e);
-            throw e;
+            if (e instanceof DuplicateKeyException) {
+                // 重复键也可能来自主键，按用户和文件哈希确认有可复用的简历。
+                try {
+                    ResumePo concurrentResume = filehasExist(hash, userId);
+                    if (concurrentResume != null) {
+                        log.info("并发上传复用已有简历，resumeId={} userId={}", concurrentResume.getId(), userId);
+                        log.debug("上传简历遇到重复键，userId={}", userId, e);
+                        return new UploadOutcome(concurrentResume.getId(), true);
+                    }
+                } catch (RuntimeException lookupException) {
+                    e.addSuppressed(lookupException);
+                }
+            }
+            throw new BusinessException(ResumeErrorCode.RESUME_SAVE_FAILED, e);
         }
 
         log.info("简历上传并落库成功，resumeId={} userId={} storageKey={} sizeBytes={}",
-                resume.getId(), id, fileKey, file.getSize());
-        return R.ok(new ResumeUploadVo(resume.getId()), "新简历上传成功");
+                resume.getId(), userId, fileKey, resume.getFileSize());
+        return new UploadOutcome(resume.getId(), false);
     }
 
-    /**
-     * 批量上传简历到对象存储并落库（没有进行简历解析）
-     * @param userId 用户id
-     * @param files 简历文件列表
-     * @return
-     */
-    @Override
-    public R<List<ResumeUploadBatchVo>> uploadBatch(Long userId, List<MultipartFile> files) {
-        log.info("开始批量上传简历，userId: {}", userId);
-        if (files == null || files.isEmpty()) {
-            log.error("你上传了个滚木啊!");
-            throw new BusinessException(FileErrorCode.FILE_EMPTY);
-        }
-        if (files.size() > 5) {
-            log.error("批量上传简历文件数量超出限制，一次最多上传五份简历");
-            throw new BusinessException(ResumeErrorCode.BATCH_UPLOAD_LIMIT_EXCEEDED);
-        }
-        List<ResumeUploadBatchVo> uploadResults = new ArrayList<>();
-        String[] hashes = new String[files.size()];
-        String[] contentTypes = new String[files.size()];
-        for(int i=0;i<files.size();i++){
-            MultipartFile file = files.get(i);
-            if(file == null || file.isEmpty()){
-                log.error("单个文件为滚木");
-                uploadResults.add(new ResumeUploadBatchVo(
-                        i,
-                        null,
-                        null,
-                        ResumeUploadBatchVo.Status.FAILED,
-                        String.valueOf(FileErrorCode.FILE_EMPTY.getCode()),
-                        FileErrorCode.FILE_EMPTY.getMessage()));
-                continue;
-            }
-            if(file.getSize() > MAX_RESUME_FILE_SIZE){
-                log.error("文件大小超出限制");
-                uploadResults.add(new ResumeUploadBatchVo(
-                        i,
-                        file.getOriginalFilename(),
-                        null,
-                        ResumeUploadBatchVo.Status.FAILED,
-                        String.valueOf(FileErrorCode.FILE_TOO_LARGE.getCode()),
-                        FileErrorCode.FILE_TOO_LARGE.getMessage()));
-                continue;
-            }
-            String contentType;
-            try{
-                contentType = contentTypeDetectionService.detectContentType(file);
-            } catch (BusinessException e) {
-                log.error("文件类型检测失败");
-                uploadResults.add(new ResumeUploadBatchVo(
-                        i,
-                        file.getOriginalFilename(),
-                        null,
-                        ResumeUploadBatchVo.Status.FAILED,
-                        String.valueOf(e.getCode()),
-                        e.getMessage()));
-                continue;
-            }
-            if (!ALLOWED_CONTENT_TYPES.contains(contentType)) {
-                log.error("文件类型不支持");
-                uploadResults.add(new ResumeUploadBatchVo(
-                        i,
-                        file.getOriginalFilename(),
-                        null,
-                        ResumeUploadBatchVo.Status.FAILED,
-                        String.valueOf(FileErrorCode.FILE_TYPE_NOT_SUPPORTED.getCode()),
-                        FileErrorCode.FILE_TYPE_NOT_SUPPORTED.getMessage()));
-                continue;
-            }
-
-            contentTypes[i] = contentType;
-            String hash ;
-            try{
-                hash= fileHashService.calculateHashWithFilename(file);
-            }catch (BusinessException e){
-                log.error("批量上传计算文件哈希失败，userId={} index={}", userId, i, e);
-                uploadResults.add(new ResumeUploadBatchVo(
-                        i,
-                        file.getOriginalFilename(),
-                        null,
-                        ResumeUploadBatchVo.Status.FAILED,
-                        String.valueOf(e.getCode()),
-                        e.getMessage()));
-                continue;
-            }
-            hashes[i] = hash;
-            uploadResults.add(new ResumeUploadBatchVo(
-                    i,
-                    file.getOriginalFilename(),
-                    null,
-                    null,
-                    null,
-                    null));
-        }
-        //遍历并上传落库
-        for (ResumeUploadBatchVo result : uploadResults) {
-            if (result.status() == ResumeUploadBatchVo.Status.FAILED) {
-                continue;
-            }
-
-            int index = result.index();
-            String hash = hashes[index];
-            // 每份文件上传前查重，同一批里后面的文件可以复用前面刚保存的记录。
-            ResumePo exist;
-            try {
-                exist = filehasExist(hash, userId);
-            } catch (RuntimeException e) {
-                log.error("批量上传检查或恢复已有简历失败，userId={} index={}", userId, index, e);
-                ResumeErrorCode error = ResumeErrorCode.RESUME_UPLOAD_CHECK_FAILED;
-                uploadResults.set(index, new ResumeUploadBatchVo(
-                        index,
-                        result.filename(),
-                        null,
-                        ResumeUploadBatchVo.Status.FAILED,
-                        String.valueOf(error.getCode()),
-                        error.getMessage()));
-                continue;
-            }
-            if (exist != null) {
-                log.info("简历上传复用已有记录，resumeId={} userId={}", exist.getId(), userId);
-                uploadResults.set(index, new ResumeUploadBatchVo(
-                        index,
-                        result.filename(),
-                        exist.getId(),
-                        ResumeUploadBatchVo.Status.REUSED,
-                        null,
-                        null));
-                continue;
-            }
-
-            log.info("开始上传");
-            ResumePo resume = new ResumePo();
-            try{
-                //上传对象存储
-                String key = fileStorageService.uploadResume(files.get(result.index()));
-                log.info("上传对象存储成功！userId={},index={},storageKey={}", userId, result.index(), key);
-                resume.setUserId(userId);
-                resume.setFileHash(hash);
-                resume.setFileName(files.get(result.index()).getOriginalFilename());
-                resume.setFileSize(files.get(result.index()).getSize());
-                resume.setContentType(contentTypes[result.index()]);
-                resume.setStorageKey(key);
-                resume.setParseStatus(ResumeParseStatusConstant.PENDING);
-
-            } catch (BusinessException e){
-                log.error("上传对象存储失败！userId={},index={},code={}", userId, result.index(), e.getCode(),e);
-                uploadResults.set(result.index(),new ResumeUploadBatchVo(
-                        result.index(),
-                        files.get(result.index()).getOriginalFilename(),
-                        null,
-                        ResumeUploadBatchVo.Status.FAILED,
-                        String.valueOf(e.getCode()),
-                        e.getMessage()));
-                continue;
-            }
-            try {
-                if (!save(resume)) {
-                    throw new IllegalStateException("保存简历记录失败");
-                }
-            } catch (RuntimeException e) {
-                cleanupUploadedFile(resume.getStorageKey(), e);
-                if (e instanceof DuplicateKeyException) {
-                    // 重复键也可能来自主键，按用户和文件哈希确认有可复用的简历。
-                    try {
-                        ResumePo concurrentResume = filehasExist(hash, userId);
-                        if (concurrentResume != null) {
-                            log.info("并发上传复用已有简历，resumeId={} userId={}", concurrentResume.getId(), userId);
-                            log.debug("批量上传遇到重复键，userId={} index={}", userId, index, e);
-                            uploadResults.set(index, new ResumeUploadBatchVo(
-                                    index,
-                                    result.filename(),
-                                    concurrentResume.getId(),
-                                    ResumeUploadBatchVo.Status.REUSED,
-                                    null,
-                                    null));
-                            continue;
-                        }
-                    } catch (RuntimeException lookupException) {
-                        e.addSuppressed(lookupException);
-                    }
-                }
-                log.error("批量上传保存简历失败，userId={} index={}", userId, index, e);
-                ResumeErrorCode error = ResumeErrorCode.RESUME_SAVE_FAILED;
-                uploadResults.set(index, new ResumeUploadBatchVo(
-                        index,
-                        result.filename(),
-                        null,
-                        ResumeUploadBatchVo.Status.FAILED,
-                        String.valueOf(error.getCode()),
-                        error.getMessage()));
-                continue;
-            }
-
-            log.info("简历上传并落库成功，resumeId={} userId={} storageKey={} sizeBytes={}",
-                    resume.getId(), userId, resume.getStorageKey(), resume.getFileSize());
-            uploadResults.set(index, new ResumeUploadBatchVo(
-                    index,
-                    result.filename(),
-                    resume.getId(),
-                    ResumeUploadBatchVo.Status.SUCCESS,
-                    null,
-                    null));
-
-        }
-
-        return R.ok(uploadResults);
+    private record UploadOutcome(Long resumeId, boolean reused) {
     }
 
     @Override
     public R<Void> parseResume(Long resumeId, Long userId) {
         ResumePo resume = getAvailableResumeOrThrow(resumeId, userId);
+        ParseSubmitOutcome outcome = submitParse(resume, userId);
+        return R.<Void>ok(outcome.getMessage());
+    }
+
+    @Override
+    public R<List<ResumeParseBatchVo>> parseResumeBatch(List<Long> resumeIds, Long userId) {
+        throw new UnsupportedOperationException("批量解析尚未实现");
+    }
+
+    private ParseSubmitOutcome submitParse(ResumePo resume, Long userId) {
+        Long resumeId = resume.getId();
         if (ResumeParseStatusConstant.PROCESSING.equals(resume.getParseStatus())) {
             log.info("简历解析任务已在处理，跳过重复提交，resumeId: {}", resumeId);
-            return R.<Void>ok("解析任务正在处理，请勿重复提交");
+            return ParseSubmitOutcome.ALREADY_PROCESSING;
         }
         if (ResumeParseStatusConstant.SUCCESS.equals(resume.getParseStatus())) {
             log.info("简历解析成功，跳过重复提交，resumeId: {}", resumeId);
-            return R.<Void>ok("解析任务已完成，请勿重复提交");
+            return ParseSubmitOutcome.ALREADY_PARSED;
         }
 
         // 提交前占用状态，PROCESSING 同时包括排队与执行阶段。
@@ -419,7 +279,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
         }
 
         log.info("简历解析任务已提交，resumeId: {}，原解析状态: {}", resumeId, resume.getParseStatus());
-        return R.<Void>ok("解析任务已提交");
+        return ParseSubmitOutcome.SUBMITTED;
     }
 
     @Override
