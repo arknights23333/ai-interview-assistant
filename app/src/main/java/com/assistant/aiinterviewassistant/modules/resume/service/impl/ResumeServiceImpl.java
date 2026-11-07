@@ -28,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.BeanUtils;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -64,6 +65,9 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
     /** 简历文件最大为 10 MiB。 */
     private static final long MAX_RESUME_FILE_SIZE = 10L * 1024 * 1024;
     private static final int MAX_BATCH_UPLOAD_FILES = 5;
+
+    /** 批量解析简历，最多允许 5 份。 */
+    private static final int MAX_BATCH_PARSE_RESUME = 5;
 
     /** 允许上传的简历 MIME 类型。 */
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
@@ -191,7 +195,35 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
 
     @Override
     public R<List<ResumeParseBatchVo>> parseResumeBatch(List<Long> resumeIds, Long userId) {
-        throw new UnsupportedOperationException("批量解析尚未实现");
+        log.info("开始批量解析简历，userId={}", userId);
+        List<Long> targetIds = resumeIds.stream()
+                .distinct()
+                .toList();
+        if(targetIds.size()==0||targetIds.size()>MAX_BATCH_PARSE_RESUME){
+            throw  new BusinessException(ResumeErrorCode.INVALID_BATCH_PARSE_COUNT);
+        }
+        List<ResumeParseBatchVo> results = new ArrayList<>();
+        for (Long resumeId : targetIds) {
+            try {
+                if (resumeId == null || resumeId <= 0) {
+                    throw new BusinessException(ResumeErrorCode.INVALID_RESUME_ID);
+                }
+
+                ResumePo resume = getAvailableResumeOrThrow(resumeId, userId);
+                ParseSubmitOutcome outcome = submitParse(resume, userId);
+                results.add(new ResumeParseBatchVo(resumeId, outcome, null, null));
+            } catch (BusinessException e) {
+                results.add(new ResumeParseBatchVo(
+                        resumeId, ParseSubmitOutcome.FAILED, String.valueOf(e.getCode()), e.getMessage()));
+            } catch (DataAccessException e) {
+                log.error("批量提交解析任务时数据库操作失败，userId={} resumeId={}", userId, resumeId, e);
+                ResumeErrorCode error = ResumeErrorCode.PARSE_SUBMIT_DB_FAILED;
+                results.add(new ResumeParseBatchVo(
+                        resumeId, ParseSubmitOutcome.FAILED, String.valueOf(error.getCode()), error.getMessage()));
+            }
+        }
+
+        return R.ok(results,"批量解析已提交");
     }
 
     private ParseSubmitOutcome submitParse(ResumePo resume, Long userId) {
@@ -216,7 +248,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
         if (!accepted) {
             log.warn("简历解析任务未提交，状态更新未命中，resumeId={} userId={} expectedStatus={}",
                     resumeId, userId, resume.getParseStatus());
-            throw new BusinessException(FileErrorCode.FILE_PARSE_ERROR);
+            throw new BusinessException(ResumeErrorCode.RESUME_STATE_CHANGED);
         }
 
         try {
@@ -267,7 +299,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
                         .eq(ResumePo::getUserId, userId)
                         .eq(ResumePo::getParseStatus, ResumeParseStatusConstant.PROCESSING)
                         .set(ResumePo::getParseStatus, ResumeParseStatusConstant.FAILED)
-                        .set(ResumePo::getParseError, "解析任务繁忙，请稍后重试"));
+                        .set(ResumePo::getParseError, ResumeErrorCode.PARSE_TASK_BUSY.getMessage()));
                 if (!marked) {
                     log.warn("未更新解析任务被拒绝后的失败状态，resumeId: {}", resumeId);
                 }
@@ -275,7 +307,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
                 e.addSuppressed(stateException);
                 log.error("保存解析任务被拒绝后的失败状态时出错，resumeId: {}", resumeId, stateException);
             }
-            throw new BusinessException(FileErrorCode.FILE_PARSE_ERROR, e);
+            throw new BusinessException(ResumeErrorCode.PARSE_TASK_BUSY, e);
         }
 
         log.info("简历解析任务已提交，resumeId: {}，原解析状态: {}", resumeId, resume.getParseStatus());

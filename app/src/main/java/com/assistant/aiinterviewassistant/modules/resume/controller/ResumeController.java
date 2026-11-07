@@ -4,6 +4,7 @@ import com.assistant.aiinterviewassistant.modules.resume.domain.dto.DeleteResume
 import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.response.R;
 import com.assistant.aiinterviewassistant.modules.resume.domain.dto.UpdateResumeRecycleStatusDto;
+import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeParseBatchVo;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeUploadBatchVo;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeUploadVo;
 import com.assistant.aiinterviewassistant.modules.resume.domain.vo.ResumeVo;
@@ -81,6 +82,18 @@ public class ResumeController {
         return resumeService.parseResume(resumeId, Long.valueOf(jwt.getSubject()));
     }
 
+    /**
+     * 批量提交当前用户的简历正文解析任务，成功响应不代表解析已完成。
+     * @param jwt
+     * @param resumeIds
+     * @return
+     */
+    @PostMapping("/parseBatch")
+    public R<List<ResumeParseBatchVo>> parseBatch(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody List<Long> resumeIds){
+        return resumeService.parseResumeBatch(resumeIds, Long.valueOf(jwt.getSubject()));
+    }
     /**
      * 更新简历回收站状态。
      *

@@ -16,6 +16,12 @@ public enum ResumeErrorCode implements BusinessErrorCode {
     /** 批量上传的简历数量超过五份。 */
     BATCH_UPLOAD_LIMIT_EXCEEDED(40012, HttpStatus.BAD_REQUEST, "一次最多上传五份简历"),
 
+    /** 批量解析的简历数量不在一到五份之间。 */
+    INVALID_BATCH_PARSE_COUNT(40013, HttpStatus.BAD_REQUEST, "一次只能提交 1 到 5 份简历进行解析"),
+
+    /** 批量解析中的简历 ID 为空或不是正数。 */
+    INVALID_RESUME_ID(40014, HttpStatus.BAD_REQUEST, "简历 ID 不能为空且必须为正数"),
+
     /** 当前用户可访问的有效简历不存在，包含不属于当前用户或已移入回收站。 */
     RESUME_NOT_FOUND(40402, HttpStatus.NOT_FOUND, "简历不存在或已被删除"),
 
@@ -44,7 +50,10 @@ public enum ResumeErrorCode implements BusinessErrorCode {
     RESUME_SAVE_FAILED(50016, HttpStatus.INTERNAL_SERVER_ERROR, "简历保存失败，请稍后重试"),
 
     /** 上传前查询已有简历或恢复回收站中的简历失败。 */
-    RESUME_UPLOAD_CHECK_FAILED(50017, HttpStatus.INTERNAL_SERVER_ERROR, "检查或恢复已有简历失败，请稍后重试");
+    RESUME_UPLOAD_CHECK_FAILED(50017, HttpStatus.INTERNAL_SERVER_ERROR, "检查或恢复已有简历失败，请稍后重试"),
+
+    /** 提交正文解析任务时查询简历或更新解析状态失败。 */
+    PARSE_SUBMIT_DB_FAILED(50018, HttpStatus.INTERNAL_SERVER_ERROR, "提交解析任务失败，请稍后重试");
 
     private final int code;
     private final HttpStatus httpStatus;
