@@ -8,7 +8,8 @@ import org.mybatis.spring.annotation.MapperScan;
 @Configuration
 @MapperScan({
         "com.assistant.aiinterviewassistant.modules.user.mapper",
-        "com.assistant.aiinterviewassistant.modules.resume.mapper"
+        "com.assistant.aiinterviewassistant.modules.resume.mapper",
+        "com.assistant.aiinterviewassistant.modules.schedule.mapper"
 })
 public class MybatisPlusConfig {
 
