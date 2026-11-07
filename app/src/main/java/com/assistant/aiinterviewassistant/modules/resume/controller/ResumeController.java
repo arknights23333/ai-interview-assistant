@@ -42,13 +42,19 @@ public class ResumeController {
     }
 
     /**
-     * 获取用户的简历列表
-     * @param
-     * @return
+     * 分页查询当前用户的简历。
+     *
+     * @param jwt 当前登录用户
+     * @param pageQuery 分页参数
+     * @param recycled 是否查询回收站，默认查询正常简历
+     * @return 简历分页结果
      */
     @PostMapping("/list")
-    public R<Page<ResumeVo>> getResumeList(@AuthenticationPrincipal Jwt jwt, @Valid @ModelAttribute PageQuery pageQuery) {
-        return resumeService.getResumeList(Long.valueOf(jwt.getSubject()),pageQuery);
+    public R<Page<ResumeVo>> getResumeList(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @ModelAttribute PageQuery pageQuery,
+            @RequestParam(name = "recycled", defaultValue = "false") boolean recycled) {
+        return resumeService.getResumeList(Long.valueOf(jwt.getSubject()), pageQuery, recycled);
     }
 
     /**

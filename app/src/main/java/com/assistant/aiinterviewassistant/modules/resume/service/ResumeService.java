@@ -44,12 +44,8 @@ public interface ResumeService extends IService<ResumePo> {
      */
     R<ResumeVo> getResume(Long resumeId, Long userId);
 
-    /**
-     * 查询用户的简历列表
-     * @param userId
-     * @return
-     */
-    R<Page<ResumeVo>> getResumeList(Long userId, PageQuery pageQuery);
+    /** 分页查询当前用户的正常简历或回收站简历。 */
+    R<Page<ResumeVo>> getResumeList(Long userId, PageQuery pageQuery, boolean recycled);
 
     /** 更新单份简历的回收站状态，true 恢复，false 移入回收站。 */
     R<Void> updateRecycleStatus(Long resumeId, boolean recycleStatus, Long userId);

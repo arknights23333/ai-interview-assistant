@@ -331,11 +331,12 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
     }
 
     @Override
-    public R<Page<ResumeVo>> getResumeList(Long userId, PageQuery pageQuery) {
-        Page<ResumePo> page =new Page<>(pageQuery.getPageNum(), pageQuery.getPageSize());
-        Page<ResumePo> result=page(page,new LambdaQueryWrapper<ResumePo>()
+    public R<Page<ResumeVo>> getResumeList(Long userId, PageQuery pageQuery, boolean recycled) {
+        Page<ResumePo> page = new Page<>(pageQuery.getPageNum(), pageQuery.getPageSize());
+        Page<ResumePo> result = page(page, new LambdaQueryWrapper<ResumePo>()
                 .eq(ResumePo::getUserId, userId)
-                .isNull(ResumePo::getDeleteTime)
+                .isNull(!recycled, ResumePo::getDeleteTime)
+                .isNotNull(recycled, ResumePo::getDeleteTime)
                 .orderByDesc(ResumePo::getCreateAt)
                 .orderByDesc(ResumePo::getId));
         return R.ok(convertPage(result, ResumeVo.class));
