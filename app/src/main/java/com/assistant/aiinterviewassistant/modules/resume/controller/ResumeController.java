@@ -58,6 +58,20 @@ public class ResumeController {
     }
 
     /**
+     * 单个简历下载接口
+     * @param jwt
+     * @param resumeId
+     * @return 预签名下载链接
+     */
+    @GetMapping("/download/{resumeId}")
+    public R<String> download (
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("resumeId") Long resumeId
+    ){
+        return resumeService.download(resumeId, Long.valueOf(jwt.getSubject()));
+    }
+
+    /**
      * 上传简历
      * @param jwt
      * @param file

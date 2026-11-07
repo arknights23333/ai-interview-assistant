@@ -114,7 +114,12 @@ public class FileStorageService {
      * @return 供浏览器访问的预签名下载链接
      */
     public String fileDownload(String key, String originalFilename) {
-        return generateDownloadUrl(key, originalFilename);
+        try {
+
+            return generateDownloadUrl(key, originalFilename);
+        } catch (S3Exception | SdkClientException | IllegalArgumentException e) {
+            throw new BusinessException(FileErrorCode.FILE_DOWNLOAD_FAILED, e);
+        }
     }
 
     /**
@@ -141,6 +146,10 @@ public class FileStorageService {
 
     /** 为下载响应设置附件方式和 UTF-8 文件名，再将响应头参数纳入签名。 */
     private String generateDownloadUrl(String key, String originalFilename) {
+        if(!hasObject(key)){
+            log.error("文件不存在，key: {}", key);
+            throw new BusinessException(FileErrorCode.FILE_NOT_FOUND);
+        }
         String contentDisposition = ContentDisposition.attachment()
                 .filename(originalFilename, StandardCharsets.UTF_8)
                 .build()

@@ -121,6 +121,14 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
         return R.ok(uploadResults, "批量上传成功，结果如下");
     }
 
+    @Override
+    public R<String> download(Long resumeId, Long aLong) {
+        ResumePo resume = getAvailableResumeOrThrow(resumeId, aLong);
+        String key = resume.getStorageKey();
+
+        return R.ok(fileStorageService.fileDownload(key, resume.getFileName()));
+    }
+
     /** 校验、查重并保存一份简历。 */
     private UploadOutcome uploadOne(@Nullable Long userId, @Nullable MultipartFile file) {
         if (file == null || file.isEmpty()) {

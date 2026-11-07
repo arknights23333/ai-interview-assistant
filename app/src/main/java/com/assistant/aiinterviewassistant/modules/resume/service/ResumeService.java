@@ -69,4 +69,12 @@ public interface ResumeService extends IService<ResumePo> {
      * @return
      */
     R<List<ResumeUploadBatchVo>> uploadBatch(Long userId, List<MultipartFile> files);
+
+    /**
+     * 下载简历，返回预签名下载链接
+     * @param resumeId
+     * @param aLong
+     * @return
+     */
+    R<String> download(Long resumeId, Long aLong);
 }
