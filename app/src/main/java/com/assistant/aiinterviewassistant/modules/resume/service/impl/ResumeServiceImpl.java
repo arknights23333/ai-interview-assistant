@@ -74,7 +74,8 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
             "application/pdf",
             "application/msword",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "text/plain"
+            "text/plain",
+            "text/markdown"
     );
     /** 上传一份简历，返回新建或复用的简历 ID。 */
     @Override
@@ -117,7 +118,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
                         e.getMessage()));
             }
         }
-        return R.ok(uploadResults);
+        return R.ok(uploadResults, "批量上传成功，结果如下");
     }
 
     /** 校验、查重并保存一份简历。 */
