@@ -15,6 +15,9 @@ import com.baomidou.mybatisplus.spring.service.IService;
 import org.jspecify.annotations.Nullable;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * 简历服务
+ */
 public interface ResumeService extends IService<ResumePo> {
     /**
      * 上传简历

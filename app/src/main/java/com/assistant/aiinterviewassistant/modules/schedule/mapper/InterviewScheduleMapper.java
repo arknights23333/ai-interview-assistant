@@ -3,5 +3,5 @@ import com.assistant.aiinterviewassistant.modules.schedule.domain.po.InterviewSc
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 @Mapper
-public interface InterviewSchedulePoMapper extends BaseMapper<InterviewSchedulePo> {
+public interface InterviewScheduleMapper extends BaseMapper<InterviewSchedulePo> {
 }
