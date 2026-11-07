@@ -33,6 +33,7 @@ public class RegisterDto {
     @NotBlank(message = "验证码不能为空")
     private String code;
     @Size(max = 64, message = "昵称不能超过64个字符")
+    @NotBlank(message = "昵称不能为空")
     private String nickname;
     @Size(max = 1024, message = "头像地址不能超过1024个字符")
     private String avatar;

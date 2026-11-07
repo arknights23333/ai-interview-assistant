@@ -61,6 +61,13 @@ public class ResumeController {
     public R<ResumeUploadVo> upload(@AuthenticationPrincipal Jwt jwt, MultipartFile file) {
         return resumeService.upload(Long.valueOf(jwt.getSubject()), file);
     }
+
+    /**
+     * 批量上传简历
+     * @param jwt
+     * @param files
+     * @return
+     */
     @PostMapping("/uploadBatch")
     public R<List<ResumeUploadBatchVo>> uploadBatch(
             @AuthenticationPrincipal Jwt jwt,
@@ -70,7 +77,6 @@ public class ResumeController {
 
     /**
      * 提交当前用户的简历正文解析任务，成功响应不代表解析已完成。
-     *
      * @param jwt 已通过认证的登录身份
      * @param resumeId 简历 ID
      * @return 解析任务提交结果
