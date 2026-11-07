@@ -17,6 +17,6 @@ public class JwtProperties {
     private String issuer;
     /** Token 有效时间，单位为秒，默认 2 小时。 */
     @Positive(message = "Token 有效期必须大于 0")
-    private long validitySeconds = 7200L;
+    private long validitySeconds = 72000L;
 
 }

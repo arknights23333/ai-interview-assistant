@@ -43,11 +43,21 @@ public class TextCleaningService {
             "[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]"
     );
 
+    /** 清除文档字体映射到 Unicode 私用区的图标字符。 */
+    private static final Pattern PRIVATE_USE_CHARS = Pattern.compile("\\p{Co}");
+
+    /** 匹配常见 HTML 排版标签，允许属性值内出现尖括号。 */
+    private static final Pattern HTML_LAYOUT_TAG = Pattern.compile(
+            "<(?:(?<lineBreak>br|/div|/p)|/?(?:div|p|span|img|a))(?=[\\s/>])"
+                    + "(?:[^\"'<>]+|\"[^\"]*\"|'[^']*')*+>",
+            Pattern.CASE_INSENSITIVE
+    );
+
     /**
      * 清理文档解析后的文本，移除匹配规则的资源名称、文件 URI、
-     * 网页链接、独立分隔线及部分控制字符，并规范换行和空白。
+     * 网页链接、独立分隔线、图标字符及常见 HTML 排版标签，并规范换行和空白。
      *
-     * <p>保留正文中的段落结构，不按 HTML 标签规则删除尖括号内容。
+     * <p>保留正文中的段落结构与 HTML 标签间的可见文字。
      * 资源过滤基于正则匹配，无法判断内容来源，可能误删符合规则的原文。</p>
      *
      * @param text 解析得到的原始文本
@@ -60,7 +70,11 @@ public class TextCleaningService {
 
         // 先统一换行，再执行逐行匹配及内容过滤。
         String t = text.replace("\r\n", "\n").replace("\r", "\n");
+        t = t.replace('\u00A0', ' ');
         t = CONTROL_CHARS.matcher(t).replaceAll("");
+        t = PRIVATE_USE_CHARS.matcher(t).replaceAll("");
+        // 换行标签和块级结束标签保留分隔，避免删除标签后把两段正文连在一起。
+        t = HTML_LAYOUT_TAG.matcher(t).replaceAll(match -> match.group("lineBreak") != null ? "\n" : "");
         t = URL.matcher(t).replaceAll("");
         t = FILE_URL.matcher(t).replaceAll("");
         t = IMAGE.matcher(t).replaceAll("");
