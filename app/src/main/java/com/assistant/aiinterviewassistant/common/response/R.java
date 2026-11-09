@@ -66,4 +66,10 @@ public class R<T> {
         r.setMsg(msg);
         return r;
     }
+    public static <T> R<T> fail(T data, String msg) {
+        R<T> r = new R<>();
+        r.setData(data);
+        r.setMsg(msg);
+        return r;
+    }
 }

@@ -52,7 +52,7 @@ public class AuthController {
     @PostMapping("/login")
     public R<LoginVo> login(@Valid @RequestBody LoginDto dto){
         LoginVo vo = authService.login(dto);
-        return R.ok(vo);
+        return R.ok(vo,"登录成功");
     }
 
     /**
