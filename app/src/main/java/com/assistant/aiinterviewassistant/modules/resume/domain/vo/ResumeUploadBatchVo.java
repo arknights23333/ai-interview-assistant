@@ -1,5 +1,7 @@
 package com.assistant.aiinterviewassistant.modules.resume.domain.vo;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * 批量上传简历结果
  * @param index 文件索引，这样可以区别同名文件
@@ -11,11 +13,11 @@ package com.assistant.aiinterviewassistant.modules.resume.domain.vo;
  */
 public record ResumeUploadBatchVo(
         int index,
-        String filename,
-        Long resumeId,
+        @Nullable String filename,
+        @Nullable Long resumeId,
         Status status,
-        String errorCode,
-        String message
+        @Nullable String errorCode,
+        @Nullable String message
 
 ) {
     public enum Status{

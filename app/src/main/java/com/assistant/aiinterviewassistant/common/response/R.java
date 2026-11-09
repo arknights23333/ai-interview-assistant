@@ -1,10 +1,13 @@
 package com.assistant.aiinterviewassistant.common.response;
 import lombok.Data;
+import org.jspecify.annotations.Nullable;
 
 @Data
 public class R<T> {
    private int code;
+   @Nullable
    private String msg;
+   @Nullable
    private T data;
 
 

@@ -3,6 +3,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
+import org.jspecify.annotations.Nullable;
 
 import java.time.OffsetDateTime;
 
@@ -22,6 +23,7 @@ public class UserVo {
     private String nickname;
 
     /** 头像的稳定文件标识或地址，未设置时为空。 */
+    @Nullable
     private String avatar;
 
     /** 角色：USER 普通用户，ADMIN 管理员；注册时由服务端赋值。 */

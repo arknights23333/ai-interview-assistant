@@ -1,5 +1,6 @@
 package com.assistant.aiinterviewassistant.modules.resume.domain.vo;
 import lombok.Data;
+import org.jspecify.annotations.Nullable;
 
 import java.time.OffsetDateTime;
 
@@ -9,6 +10,7 @@ public class ResumeVo {
 
     private OffsetDateTime createAt;
 
+    @Nullable
     private String resumeContent;
 
     private String contentType;
@@ -19,6 +21,7 @@ public class ResumeVo {
 
     private String parseStatus;
 
+    @Nullable
     private String parseError;
 
 }

@@ -2,6 +2,7 @@ package com.assistant.aiinterviewassistant.modules.user.domain.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.jspecify.annotations.Nullable;
 
 /**
  * 登录成功后返回的登录凭证及用户信息。
@@ -26,6 +27,7 @@ public class LoginVo {
     private String email;
 
     /** 头像的稳定文件标识或地址，未设置时为空。 */
+    @Nullable
     private String avatar;
 
     /** 用户角色：USER 普通用户，ADMIN 管理员。 */
