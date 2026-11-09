@@ -4,6 +4,7 @@ import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.response.R;
 import com.assistant.aiinterviewassistant.modules.schedule.domain.dto.ScheduleCreateDto;
 import com.assistant.aiinterviewassistant.modules.schedule.domain.dto.ScheduleQueryDto;
+import com.assistant.aiinterviewassistant.modules.schedule.domain.dto.UpdateScheduleStatusDto;
 import com.assistant.aiinterviewassistant.modules.schedule.domain.vo.ScheduleVo;
 import com.assistant.aiinterviewassistant.modules.schedule.service.InterviewScheduleService;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -52,6 +53,22 @@ public class InterviewScheduleController {
                                    @PathVariable Long id){
         interviewScheduleService.updateSchedule(Long.valueOf(jwt.getSubject()),dto,id);
         return R.ok("修改成功");
+    }
+
+    /**
+     * 修改当前用户的面试日程状态。
+     *
+     * @param jwt 当前登录身份
+     * @param id 面试日程 ID
+     * @param dto 目标状态
+     * @return 状态修改结果
+     */
+    @PutMapping("/status/{id}")
+    public R<Void> updateScheduleStatus(@AuthenticationPrincipal Jwt jwt,
+                                        @PathVariable("id") Long id,
+                                        @Valid @RequestBody UpdateScheduleStatusDto dto) {
+        interviewScheduleService.updateScheduleStatus(Long.valueOf(jwt.getSubject()), id, dto.getStatus());
+        return R.ok("状态修改成功");
     }
 
     /**

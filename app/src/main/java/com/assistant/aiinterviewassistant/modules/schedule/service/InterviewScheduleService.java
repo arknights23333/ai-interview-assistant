@@ -39,6 +39,9 @@ public interface InterviewScheduleService extends IService<InterviewSchedulePo> 
      */
     void updateSchedule(Long userId, @Valid ScheduleCreateDto dto, Long id);
 
+    /** 修改指定用户的日程状态。 */
+    void updateScheduleStatus(Long userId, Long id, String status);
+
     /**
      * 获取面试日程列表
      *

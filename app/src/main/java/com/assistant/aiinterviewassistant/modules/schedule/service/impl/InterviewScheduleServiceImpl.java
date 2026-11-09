@@ -31,6 +31,9 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class InterviewScheduleServiceImpl extends ServiceImpl<InterviewScheduleMapper, InterviewSchedulePo> implements InterviewScheduleService {
+
+    private static final Set<String> VALID_STATUSES = Set.of("PENDING", "COMPLETED", "CANCELLED");
+
     @Override
     public String createSchedule(Long userId, ScheduleCreateDto dto) {
         if (dto.getEndAt() != null && !dto.getEndAt().isAfter(dto.getStartAt())) {
@@ -73,11 +76,27 @@ public class InterviewScheduleServiceImpl extends ServiceImpl<InterviewScheduleM
     }
 
     @Override
+    public void updateScheduleStatus(Long userId, Long id, String status) {
+        if (status == null || !VALID_STATUSES.contains(status)) {
+            throw new BusinessException(ScheduleErrorCode.INVALID_STATUS);
+        }
+
+        boolean updated = update(new LambdaUpdateWrapper<InterviewSchedulePo>()
+                .eq(InterviewSchedulePo::getId, id)
+                .eq(InterviewSchedulePo::getUserId, userId)
+                .set(InterviewSchedulePo::getStatus, status)
+                .set(InterviewSchedulePo::getUpdateAt, OffsetDateTime.now()));
+        if (!updated) {
+            throw new BusinessException(ScheduleErrorCode.SCHEDULE_NOT_FOUND);
+        }
+    }
+
+    @Override
     public R<Page<ScheduleVo>> getScheduleList(Long userId, ScheduleQueryDto dto, @Valid PageQuery pageQuery) {
 
 
         String status = dto.getStatus();
-        if(status!=null&&!Set.of("PENDING","COMPLETED","CANCELLED").contains(status)){
+        if(status!=null&&!VALID_STATUSES.contains(status)){
             throw new BusinessException(ScheduleErrorCode.INVALID_STATUS);
         }
 
