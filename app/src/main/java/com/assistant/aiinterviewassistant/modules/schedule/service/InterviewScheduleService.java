@@ -25,4 +25,13 @@ public interface InterviewScheduleService extends IService<InterviewSchedulePo> 
      * @return
      */
     R<List<Long>> deleteSchedule(Long userId, @Valid List<Long> ids);
+
+    /**
+     * 修改面试日程
+     *
+     * @param userId
+     * @param dto
+     * @param id
+     */
+    void updateSchedule(Long userId, @Valid ScheduleCreateDto dto, Long id);
 }

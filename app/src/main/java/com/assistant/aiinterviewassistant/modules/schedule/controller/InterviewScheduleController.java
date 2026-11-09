@@ -36,6 +36,17 @@ public class InterviewScheduleController {
     }
 
     /**
+     * 修改面试日程
+     * @param jwt
+     * @param dto
+     * @return
+     */
+    @PutMapping("/update/{id}")
+    public R<Void> updateSchedule (@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody ScheduleCreateDto dto, @PathVariable Long id){
+        interviewScheduleService.updateSchedule(Long.valueOf(jwt.getSubject()),dto,id);
+        return R.ok("修改成功");
+    }
+    /**
      * 删除面试日程
      * @param jwt
      * @param ids 删除的面试日程ID列表
