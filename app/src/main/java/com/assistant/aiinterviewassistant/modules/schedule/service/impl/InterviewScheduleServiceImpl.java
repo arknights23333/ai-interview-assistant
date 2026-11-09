@@ -1,16 +1,22 @@
 package com.assistant.aiinterviewassistant.modules.schedule.service.impl;
 
+import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.exception.enums.ScheduleErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.exception.BusinessException;
 import com.assistant.aiinterviewassistant.common.response.R;
 import com.assistant.aiinterviewassistant.modules.schedule.domain.dto.ScheduleCreateDto;
+import com.assistant.aiinterviewassistant.modules.schedule.domain.dto.ScheduleQueryDto;
+import com.assistant.aiinterviewassistant.modules.schedule.domain.dto.ScheduleTimeRangeDto;
 import com.assistant.aiinterviewassistant.modules.schedule.domain.po.InterviewSchedulePo;
 
+import com.assistant.aiinterviewassistant.modules.schedule.domain.vo.ScheduleVo;
 import com.assistant.aiinterviewassistant.modules.schedule.service.InterviewScheduleService;
 import com.assistant.aiinterviewassistant.modules.schedule.mapper.InterviewScheduleMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -18,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 
 
 @Slf4j
@@ -64,6 +71,48 @@ public class InterviewScheduleServiceImpl extends ServiceImpl<InterviewScheduleM
         }
 
     }
+
+    @Override
+    public R<Page<ScheduleVo>> getScheduleList(Long userId, ScheduleQueryDto dto, @Valid PageQuery pageQuery) {
+
+
+        String status = dto.getStatus();
+        if(status!=null&&!Set.of("PENDING","COMPLETED","CANCELLED").contains(status)){
+            throw new BusinessException(ScheduleErrorCode.INVALID_STATUS);
+        }
+
+        LambdaQueryWrapper<InterviewSchedulePo> wrapper = new LambdaQueryWrapper<InterviewSchedulePo>()
+                .eq(InterviewSchedulePo::getUserId, userId)
+                .eq(dto.getStatus()!=null, InterviewSchedulePo::getStatus, dto.getStatus())
+                .like(dto.getCompanyName()!=null, InterviewSchedulePo::getCompanyName, dto.getCompanyName())
+                .orderByAsc(InterviewSchedulePo::getStartAt)
+                .orderByAsc(InterviewSchedulePo::getId);
+
+        ScheduleTimeRangeDto timeRange = dto.getTimeRange();
+        if(timeRange!=null){
+            if(!timeRange.getTo().isAfter(timeRange.getFrom())){
+                throw new BusinessException(ScheduleErrorCode.INVALID_QUERY_TIME_RANGE);
+            }
+            wrapper.ge(InterviewSchedulePo::getStartAt, timeRange.getFrom())
+                    .lt(InterviewSchedulePo::getStartAt, timeRange.getTo());
+        }
+
+        Page<InterviewSchedulePo> page = new Page<>(pageQuery.getPageNum(), pageQuery.getPageSize());
+        Page<InterviewSchedulePo> result = page(page,wrapper);
+
+        List<ScheduleVo> list = result.getRecords().stream().
+                map(
+                        po ->{
+                            ScheduleVo vo = new ScheduleVo();
+                            BeanUtils.copyProperties(po,vo);
+                            return vo;
+                        }
+                ).toList();
+        Page<ScheduleVo> resultVo = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
+        resultVo.setRecords(list);
+        return R.ok(resultVo,"获取面试日程列表成功");
+    }
+
     @Override
     public R<List<Long>> deleteSchedule(Long userId, List<Long> ids) {
         if (ids == null || ids.isEmpty() || ids.stream().anyMatch(id -> id == null || id <= 0)) {

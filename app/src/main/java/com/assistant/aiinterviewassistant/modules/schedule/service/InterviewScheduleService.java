@@ -1,7 +1,11 @@
 package com.assistant.aiinterviewassistant.modules.schedule.service;
 
+import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.response.R;
 import com.assistant.aiinterviewassistant.modules.schedule.domain.dto.ScheduleCreateDto;
+import com.assistant.aiinterviewassistant.modules.schedule.domain.dto.ScheduleQueryDto;
+import com.assistant.aiinterviewassistant.modules.schedule.domain.vo.ScheduleVo;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.IService;
 import com.assistant.aiinterviewassistant.modules.schedule.domain.po.InterviewSchedulePo;
 import jakarta.validation.Valid;
@@ -34,4 +38,14 @@ public interface InterviewScheduleService extends IService<InterviewSchedulePo> 
      * @param id
      */
     void updateSchedule(Long userId, @Valid ScheduleCreateDto dto, Long id);
+
+    /**
+     * 获取面试日程列表
+     *
+     * @param userId
+     * @param dto
+     * @param pageQuery
+     * @return
+     */
+    R<Page<ScheduleVo>> getScheduleList(Long userId, @Valid ScheduleQueryDto dto, @Valid PageQuery pageQuery);
 }

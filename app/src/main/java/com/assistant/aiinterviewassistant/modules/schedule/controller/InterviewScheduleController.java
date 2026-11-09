@@ -1,8 +1,12 @@
 package com.assistant.aiinterviewassistant.modules.schedule.controller;
 
+import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.response.R;
 import com.assistant.aiinterviewassistant.modules.schedule.domain.dto.ScheduleCreateDto;
+import com.assistant.aiinterviewassistant.modules.schedule.domain.dto.ScheduleQueryDto;
+import com.assistant.aiinterviewassistant.modules.schedule.domain.vo.ScheduleVo;
 import com.assistant.aiinterviewassistant.modules.schedule.service.InterviewScheduleService;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -29,7 +33,8 @@ public class InterviewScheduleController {
      * @return
      */
     @PostMapping("/create")
-    public R<String> createSchedule(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody ScheduleCreateDto dto){
+    public R<String> createSchedule(@AuthenticationPrincipal Jwt jwt,
+                                    @Valid @RequestBody ScheduleCreateDto dto){
         String id = interviewScheduleService.createSchedule(Long.valueOf(jwt.getSubject()),dto);
 
         return R.ok(id,"创建成功");
@@ -42,9 +47,25 @@ public class InterviewScheduleController {
      * @return
      */
     @PutMapping("/update/{id}")
-    public R<Void> updateSchedule (@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody ScheduleCreateDto dto, @PathVariable Long id){
+    public R<Void> updateSchedule (@AuthenticationPrincipal Jwt jwt,
+                                   @Valid @RequestBody ScheduleCreateDto dto,
+                                   @PathVariable Long id){
         interviewScheduleService.updateSchedule(Long.valueOf(jwt.getSubject()),dto,id);
         return R.ok("修改成功");
+    }
+
+    /**
+     * 获取面试日程列表
+     * @param jwt
+     * @param dto 查询参数 时间范围，公司名字，状态。
+     * @param pageQuery 分页参数
+     * @return
+     */
+    @PostMapping("/list")
+    public R<Page<ScheduleVo>> getScheduleList(@AuthenticationPrincipal Jwt jwt,
+                                               @Valid @RequestBody ScheduleQueryDto dto,
+                                               @Valid @ModelAttribute PageQuery pageQuery){
+        return interviewScheduleService.getScheduleList(Long.valueOf(jwt.getSubject()),dto,pageQuery);
     }
     /**
      * 删除面试日程
@@ -53,7 +74,8 @@ public class InterviewScheduleController {
      * @return
      */
     @DeleteMapping("/delete")
-    public R<List<Long>> deleteSchedule(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody List<Long> ids){
+    public R<List<Long>> deleteSchedule(@AuthenticationPrincipal Jwt jwt,
+                                        @Valid @RequestBody List<Long> ids){
         return interviewScheduleService.deleteSchedule(Long.valueOf(jwt.getSubject()),ids);
 
     }
