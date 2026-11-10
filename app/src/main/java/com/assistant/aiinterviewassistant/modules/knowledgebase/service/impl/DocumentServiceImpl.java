@@ -14,7 +14,6 @@ import com.assistant.aiinterviewassistant.modules.knowledgebase.domain.vo.Docume
 import com.assistant.aiinterviewassistant.modules.knowledgebase.service.DocumentService;
 import com.assistant.aiinterviewassistant.modules.knowledgebase.domain.po.KnowledgeBasePo;
 import com.assistant.aiinterviewassistant.modules.knowledgebase.mapper.KnowledgeBaseMapper;
-import com.assistant.aiinterviewassistant.modules.knowledgebase.service.KnowledgeBaseService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
@@ -38,8 +37,6 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, DocumentPo>
     private final KnowledgeBaseMapper knowledgeBaseMapper;
 
     private final FileStorageService fileStorageService;
-
-    private final KnowledgeBaseService knowledgeBaseService;
 
     private final ContentTypeDetectionService typeDetector;
 
@@ -68,12 +65,7 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, DocumentPo>
         if(files.size() > MAX_BATCH_UPLOAD_FILES){
             throw new BusinessException(DocumentErrorCode.BATCH_UPLOAD_LIMIT_EXCEEDED);
         }
-        boolean owned = knowledgeBaseMapper.selectCount(new LambdaQueryWrapper<KnowledgeBasePo>()
-                .eq(KnowledgeBasePo::getId, knowledgeBaseId)
-                .eq(KnowledgeBasePo::getUserId, userId)) > 0;
-        if (!owned) {
-            throw new BusinessException(KnowledgeBaseErrorCode.KNOWLEDGE_BASE_NOT_FOUND);
-        }
+        requireOwnedKnowledgeBase(knowledgeBaseId, userId);
 
         List<DocumentUploadBatchVo> results = new ArrayList<>(files.size());
         for(int i =0 ;i<files.size();i++){
@@ -112,12 +104,7 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, DocumentPo>
 
     @Override
     public Page<DocumentVo> getList(Long userId, Long knowledgeBaseId, @Valid PageQuery pageQuery) {
-        KnowledgeBasePo basePo = knowledgeBaseMapper.selectOne(new LambdaQueryWrapper<KnowledgeBasePo>()
-                .eq(KnowledgeBasePo::getId, knowledgeBaseId)
-                .eq(KnowledgeBasePo::getUserId, userId));
-        if(basePo==null){
-            throw new BusinessException(KnowledgeBaseErrorCode.KNOWLEDGE_BASE_NOT_FOUND);
-        }
+        requireOwnedKnowledgeBase(knowledgeBaseId, userId);
         Page<DocumentPo> page = new Page<DocumentPo>(pageQuery.getPageNum(), pageQuery.getPageSize());
         LambdaQueryWrapper<DocumentPo> wrapper = new LambdaQueryWrapper<DocumentPo>()
                 .eq(DocumentPo::getKnowledgeBaseId, knowledgeBaseId)
@@ -132,6 +119,17 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, DocumentPo>
         Page<DocumentVo> response = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
         response.setRecords(records);
         return response;
+    }
+
+    @Override
+    public String download(Long userId, Long documentId) {
+        DocumentPo document = getById(documentId);
+        if(document==null){
+            throw new BusinessException(DocumentErrorCode.DOCUMENT_NOT_FOUND);
+        }
+        requireOwnedKnowledgeBase(document.getKnowledgeBaseId(), userId);
+
+        return fileStorageService.fileDownload(document.getStorageKey(), document.getOriginalFilename());
     }
 
     /**
@@ -206,6 +204,16 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, DocumentPo>
                 document.getId(), userId, storageKey, document.getFileSize());
         return new UploadOutcome(document.getId(), filename, false);
 
+    }
+
+    /** 校验知识库存在且属于当前用户。 */
+    private void requireOwnedKnowledgeBase(Long knowledgeBaseId, Long userId) {
+        boolean owned = knowledgeBaseMapper.selectCount(new LambdaQueryWrapper<KnowledgeBasePo>()
+                .eq(KnowledgeBasePo::getId, knowledgeBaseId)
+                .eq(KnowledgeBasePo::getUserId, userId)) > 0;
+        if (!owned) {
+            throw new BusinessException(KnowledgeBaseErrorCode.KNOWLEDGE_BASE_NOT_FOUND);
+        }
     }
 
     private DocumentPo filehasExist(String fileHash, Long knowledgeBaseId) {

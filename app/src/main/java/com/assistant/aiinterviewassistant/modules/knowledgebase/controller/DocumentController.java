@@ -57,4 +57,19 @@ public class DocumentController {
         return R.ok(results,"获取文档列表成功");
     }
 
+    /**
+     * 获取文档下载预签名
+     * @param jwt
+     * @param documentId
+     * @return
+     */
+    @GetMapping("/download/{documentId}")
+    public R<String> download(
+            @AuthenticationPrincipal Jwt jwt ,
+            @PathVariable("documentId") Long documentId
+    ){
+        String result = documentService.download(Long.valueOf(jwt.getSubject()), documentId);
+        return R.ok(result,"获取预签名成功");
+    }
+
 }

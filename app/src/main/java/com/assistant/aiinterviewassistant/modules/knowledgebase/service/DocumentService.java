@@ -34,4 +34,12 @@ public interface DocumentService extends IService<DocumentPo> {
      * @return
      */
     Page<DocumentVo> getList(Long userId, Long knowledgeBaseId, @Valid PageQuery pageQuery);
+
+    /**
+     * 获取下载文档预签名
+     * @param userId
+     * @param documentId
+     * @return
+     */
+    String download(Long userId, Long documentId);
 }
