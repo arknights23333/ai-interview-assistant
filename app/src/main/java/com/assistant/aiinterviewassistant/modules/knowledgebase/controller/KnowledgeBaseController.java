@@ -20,9 +20,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 知识库管理。
+ * 知识库模块接口
  *
- * @folder 知识库管理
+ * @folder 知识库模块
  */
 @RestController
 @RequestMapping("/api/knowledge-base")
