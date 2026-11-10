@@ -1,4 +1,5 @@
 package com.assistant.aiinterviewassistant.modules.knowledgebase.service.impl;
+import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.exception.enums.DocumentErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.enums.FileErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.enums.KnowledgeBaseErrorCode;
@@ -9,14 +10,19 @@ import com.assistant.aiinterviewassistant.infrastructure.storage.service.FileSto
 import com.assistant.aiinterviewassistant.modules.knowledgebase.constant.DocumentParseStatusConstant;
 import com.assistant.aiinterviewassistant.modules.knowledgebase.domain.po.DocumentPo;
 import com.assistant.aiinterviewassistant.modules.knowledgebase.domain.vo.DocumentUploadBatchVo;
+import com.assistant.aiinterviewassistant.modules.knowledgebase.domain.vo.DocumentVo;
 import com.assistant.aiinterviewassistant.modules.knowledgebase.service.DocumentService;
 import com.assistant.aiinterviewassistant.modules.knowledgebase.domain.po.KnowledgeBasePo;
 import com.assistant.aiinterviewassistant.modules.knowledgebase.mapper.KnowledgeBaseMapper;
+import com.assistant.aiinterviewassistant.modules.knowledgebase.service.KnowledgeBaseService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.assistant.aiinterviewassistant.modules.knowledgebase.mapper.DocumentMapper;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,6 +38,8 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, DocumentPo>
     private final KnowledgeBaseMapper knowledgeBaseMapper;
 
     private final FileStorageService fileStorageService;
+
+    private final KnowledgeBaseService knowledgeBaseService;
 
     private final ContentTypeDetectionService typeDetector;
 
@@ -100,6 +108,30 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, DocumentPo>
 
 
         return results;
+    }
+
+    @Override
+    public Page<DocumentVo> getList(Long userId, Long knowledgeBaseId, @Valid PageQuery pageQuery) {
+        KnowledgeBasePo basePo = knowledgeBaseMapper.selectOne(new LambdaQueryWrapper<KnowledgeBasePo>()
+                .eq(KnowledgeBasePo::getId, knowledgeBaseId)
+                .eq(KnowledgeBasePo::getUserId, userId));
+        if(basePo==null){
+            throw new BusinessException(KnowledgeBaseErrorCode.KNOWLEDGE_BASE_NOT_FOUND);
+        }
+        Page<DocumentPo> page = new Page<DocumentPo>(pageQuery.getPageNum(), pageQuery.getPageSize());
+        LambdaQueryWrapper<DocumentPo> wrapper = new LambdaQueryWrapper<DocumentPo>()
+                .eq(DocumentPo::getKnowledgeBaseId, knowledgeBaseId)
+                .orderByDesc(DocumentPo::getCreateAt, DocumentPo::getId);
+        Page<DocumentPo> result = page(page, wrapper);
+        List<DocumentVo> records = result.getRecords().stream().map(po -> {
+            DocumentVo vo = new DocumentVo();
+            BeanUtils.copyProperties(po, vo);
+            return vo;
+        }).toList();
+
+        Page<DocumentVo> response = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
+        response.setRecords(records);
+        return response;
     }
 
     /**

@@ -1,8 +1,12 @@
 package com.assistant.aiinterviewassistant.modules.knowledgebase.service;
 
+import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.modules.knowledgebase.domain.po.DocumentPo;
 import com.assistant.aiinterviewassistant.modules.knowledgebase.domain.vo.DocumentUploadBatchVo;
+import com.assistant.aiinterviewassistant.modules.knowledgebase.domain.vo.DocumentVo;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.IService;
+import jakarta.validation.Valid;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -20,4 +24,14 @@ public interface DocumentService extends IService<DocumentPo> {
      * @return
      */
     List<DocumentUploadBatchVo> uploadBatch(Long userId, List<MultipartFile> files, Long knowledgeBaseId);
+
+    /**
+     * 获取指定知识库文档列表
+     *
+     * @param userId
+     * @param knowledgeBaseId
+     * @param pageQuery
+     * @return
+     */
+    Page<DocumentVo> getList(Long userId, Long knowledgeBaseId, @Valid PageQuery pageQuery);
 }
