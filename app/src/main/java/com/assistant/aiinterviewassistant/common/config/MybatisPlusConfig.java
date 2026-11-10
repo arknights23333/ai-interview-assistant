@@ -1,16 +1,16 @@
 package com.assistant.aiinterviewassistant.common.config;
 import com.baomidou.mybatisplus.annotation.DbType;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.mybatis.spring.annotation.MapperScan;
 @Configuration
-@MapperScan({
-        "com.assistant.aiinterviewassistant.modules.user.mapper",
-        "com.assistant.aiinterviewassistant.modules.resume.mapper",
-        "com.assistant.aiinterviewassistant.modules.schedule.mapper"
-})
+@MapperScan(
+        basePackages = "com.assistant.aiinterviewassistant.modules",
+        markerInterface = BaseMapper.class
+)
 public class MybatisPlusConfig {
 
     /**
