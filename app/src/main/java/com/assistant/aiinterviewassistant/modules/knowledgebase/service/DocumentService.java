@@ -13,9 +13,11 @@ import java.util.List;
 public interface DocumentService extends IService<DocumentPo> {
     /**
      * 批量文档上传对象存储
+     *
      * @param userId
      * @param files
+     * @param knowledgeBaseId
      * @return
      */
-    List<DocumentUploadBatchVo> uploadBatch(Long userId, List<MultipartFile> files);
+    List<DocumentUploadBatchVo> uploadBatch(Long userId, List<MultipartFile> files, Long knowledgeBaseId);
 }

@@ -10,8 +10,11 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum DocumentErrorCode implements BusinessErrorCode {
 
+    BATCH_UPLOAD_LIMIT_EXCEEDED(40019, HttpStatus.BAD_REQUEST, "一次最多上传五份文档"),
+    INVALID_DOCUMENT_FILENAME(40020, HttpStatus.BAD_REQUEST, "文档文件名不能为空且不能超过255个字符"),
     INVALID_DOCUMENT_IDS(40018, HttpStatus.BAD_REQUEST, "文档 ID 不能为空且必须为正整数"),
     DOCUMENT_NOT_FOUND(40405, HttpStatus.NOT_FOUND, "文档不存在"),
+    DOCUMENT_UPLOAD_CHECK_FAILED(50027, HttpStatus.INTERNAL_SERVER_ERROR, "检查已有文档失败，请稍后重试"),
     DOCUMENT_SAVE_FAILED(50025, HttpStatus.INTERNAL_SERVER_ERROR, "文档记录保存失败，请稍后重试"),
     DOCUMENT_DELETE_FAILED(50026, HttpStatus.INTERNAL_SERVER_ERROR, "文档记录删除失败，请稍后重试");
 

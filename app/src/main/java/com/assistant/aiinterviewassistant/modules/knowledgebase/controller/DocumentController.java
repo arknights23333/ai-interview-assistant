@@ -6,6 +6,7 @@ import com.assistant.aiinterviewassistant.modules.knowledgebase.service.Document
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -23,13 +24,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DocumentController {
     private final DocumentService documentService;
-    @PostMapping("/uploadBatch")
+    @PostMapping("/uploadBatch/{knowledgeBaseId}")
     public R<List<DocumentUploadBatchVo>> uploadBatch(
             @AuthenticationPrincipal Jwt jwt ,
-            @RequestParam(value = "files", required = false) List<MultipartFile> files
+            @RequestParam(value = "files", required = false) List<MultipartFile> files,
+            @PathVariable("knowledgeBaseId") Long knowledgeBaseId
     ) {
-        List<DocumentUploadBatchVo> results = documentService.uploadBatch(Long.valueOf(jwt.getSubject()), files);
-        return R.ok();
+        List<DocumentUploadBatchVo> results = documentService.uploadBatch(Long.valueOf(jwt.getSubject()), files, knowledgeBaseId);
+        return R.ok(results);
     }
 
 }

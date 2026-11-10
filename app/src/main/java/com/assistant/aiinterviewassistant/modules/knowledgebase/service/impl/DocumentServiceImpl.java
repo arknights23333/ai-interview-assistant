@@ -1,28 +1,204 @@
 package com.assistant.aiinterviewassistant.modules.knowledgebase.service.impl;
-import com.assistant.aiinterviewassistant.common.exception.BusinessErrorCode;
+import com.assistant.aiinterviewassistant.common.exception.enums.DocumentErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.enums.FileErrorCode;
+import com.assistant.aiinterviewassistant.common.exception.enums.KnowledgeBaseErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.exception.BusinessException;
+import com.assistant.aiinterviewassistant.infrastructure.document.service.ContentTypeDetectionService;
+import com.assistant.aiinterviewassistant.infrastructure.document.service.FileHashService;
 import com.assistant.aiinterviewassistant.infrastructure.storage.service.FileStorageService;
+import com.assistant.aiinterviewassistant.modules.knowledgebase.constant.DocumentParseStatusConstant;
 import com.assistant.aiinterviewassistant.modules.knowledgebase.domain.po.DocumentPo;
 import com.assistant.aiinterviewassistant.modules.knowledgebase.domain.vo.DocumentUploadBatchVo;
 import com.assistant.aiinterviewassistant.modules.knowledgebase.service.DocumentService;
+import com.assistant.aiinterviewassistant.modules.knowledgebase.domain.po.KnowledgeBasePo;
+import com.assistant.aiinterviewassistant.modules.knowledgebase.mapper.KnowledgeBaseMapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.assistant.aiinterviewassistant.modules.knowledgebase.mapper.DocumentMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
-
+import java.util.Set;
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, DocumentPo> implements DocumentService {
 
+    private final KnowledgeBaseMapper knowledgeBaseMapper;
+
     private final FileStorageService fileStorageService;
+
+    private final ContentTypeDetectionService typeDetector;
+
+    private final FileHashService hashService;
+
+    /** 文档文件最大为 50 MiB。 */
+    private static final long MAX_DOCUMENT_FILE_SIZE = 50L * 1024 * 1024;
+    private static final int MAX_BATCH_UPLOAD_FILES = 5;
+
+    /** 批量解析文档，最多允许 5 份。 */
+    private static final int MAX_BATCH_PARSE_DOCUMENT = 5;
+
+    /** 允许上传的文档 MIME 类型。 */
+    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "text/plain",
+            "text/markdown"
+    );
     @Override
-    public List<DocumentUploadBatchVo> uploadBatch(Long userId, List<MultipartFile> files) {
+    public List<DocumentUploadBatchVo> uploadBatch(Long userId, List<MultipartFile> files, Long knowledgeBaseId) {
+        if (files == null || files.size() == 0){
+            throw new BusinessException(FileErrorCode.FILE_EMPTY);
+        }
+        if(files.size() > MAX_BATCH_UPLOAD_FILES){
+            throw new BusinessException(DocumentErrorCode.BATCH_UPLOAD_LIMIT_EXCEEDED);
+        }
+        boolean owned = knowledgeBaseMapper.selectCount(new LambdaQueryWrapper<KnowledgeBasePo>()
+                .eq(KnowledgeBasePo::getId, knowledgeBaseId)
+                .eq(KnowledgeBasePo::getUserId, userId)) > 0;
+        if (!owned) {
+            throw new BusinessException(KnowledgeBaseErrorCode.KNOWLEDGE_BASE_NOT_FOUND);
+        }
+
+        List<DocumentUploadBatchVo> results = new ArrayList<>(files.size());
+        for(int i =0 ;i<files.size();i++){
+            MultipartFile file = files.get(i);
+            String filename = file == null ? null : file.getOriginalFilename();
+            try{
+                UploadOutcome outcome = uploadOne(file, userId, knowledgeBaseId);
+                DocumentUploadBatchVo.Status status = outcome.reused() ?
+                        DocumentUploadBatchVo.Status.REUSED : DocumentUploadBatchVo.Status.SUCCESS;
+                results.add(new DocumentUploadBatchVo(
+                        i,
+                        outcome.filename(),
+                        outcome.documentId(),
+                        status,
+                        null,
+                        null
+                ));
+            }catch (BusinessException e){
+
+                log.error("上传文档失败，filename={} userId={}", filename, userId, e);
+                results.add(new DocumentUploadBatchVo(
+                        i,
+                        filename,
+                        null,
+                        DocumentUploadBatchVo.Status.FAILED,
+                        String.valueOf(e.getCode()),
+                        e.getMessage()
+                ));
+            }
+
+        }
 
 
-        return List.of();
+        return results;
+    }
+
+    /**
+     * 单个文档上传接口
+     * @param file
+     * @param userId
+     * @param knowledgeBaseId
+     * @return
+     */
+    private UploadOutcome uploadOne(MultipartFile file, Long userId, Long knowledgeBaseId) {
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException(FileErrorCode.FILE_EMPTY);
+        }
+        if (file.getSize() > MAX_DOCUMENT_FILE_SIZE) {
+            throw new BusinessException(FileErrorCode.FILE_TOO_LARGE);
+        }
+
+        String filename = file.getOriginalFilename();
+        if (filename == null || filename.isBlank() || filename.codePointCount(0, filename.length()) > 255) {
+            throw new BusinessException(DocumentErrorCode.INVALID_DOCUMENT_FILENAME);
+        }
+
+        String contentType = typeDetector.detectContentType(file);
+        if (!ALLOWED_CONTENT_TYPES.contains(contentType)) {
+            throw new BusinessException(FileErrorCode.FILE_TYPE_NOT_SUPPORTED);
+        }
+        String fileHash = hashService.calculateHash(file);
+        DocumentPo po ;
+        try {
+             po = filehasExist(fileHash,knowledgeBaseId);
+
+        } catch (RuntimeException e) {
+            throw new BusinessException(DocumentErrorCode.DOCUMENT_UPLOAD_CHECK_FAILED, e);
+        }
+        if(po!=null){
+            return new UploadOutcome(po.getId(), po.getOriginalFilename(), true);
+        }
+        String storageKey = fileStorageService.uploadKnowledgeBase(file);
+        DocumentPo document = new DocumentPo();
+
+        document.setKnowledgeBaseId(knowledgeBaseId);
+        document.setFileHash(fileHash);
+        document.setOriginalFilename(filename);
+        document.setContentType(contentType);
+        document.setStorageKey(storageKey);
+        document.setFileSize(file.getSize());
+        document.setProcessStatus(DocumentParseStatusConstant.PENDING);
+
+        try {
+            if (!save(document)) {
+                throw new IllegalStateException("保存文档记录失败");
+            }
+        } catch (RuntimeException e) {
+            cleanupUploadedFile(storageKey, e);
+            if (e instanceof DuplicateKeyException) {
+                // 重复键也可能来自主键，按知识库和文件哈希确认有可复用的文档。
+                try {
+                    DocumentPo concurrentDocument = filehasExist(fileHash, knowledgeBaseId);
+                    if (concurrentDocument != null) {
+                        log.info("并发上传复用已有文档，documentId={} userId={}", concurrentDocument.getId(), userId);
+                        log.debug("上传文档遇到重复键，userId={}", userId, e);
+                        return new UploadOutcome(concurrentDocument.getId(), concurrentDocument.getOriginalFilename(), true);
+                    }
+                } catch (RuntimeException lookupException) {
+                    e.addSuppressed(lookupException);
+                }
+            }
+            throw new BusinessException(DocumentErrorCode.DOCUMENT_SAVE_FAILED, e);
+        }
+
+        log.info("文档上传并落库成功，documentId={} userId={} storageKey={} sizeBytes={}",
+                document.getId(), userId, storageKey, document.getFileSize());
+        return new UploadOutcome(document.getId(), filename, false);
+
+    }
+
+    private DocumentPo filehasExist(String fileHash, Long knowledgeBaseId) {
+        DocumentPo po = getOne(new LambdaQueryWrapper<DocumentPo>()
+                .eq(DocumentPo::getFileHash, fileHash)
+                .eq(DocumentPo::getKnowledgeBaseId, knowledgeBaseId));
+        if(po==null){
+            return null;
+        }
+        return po;
+    }
+    /**
+     * 数据库保存失败后，尝试清理本次上传的对象。
+     * 清理失败时记录日志，不覆盖原始异常。
+     */
+    private void cleanupUploadedFile(String fileKey, RuntimeException originalException) {
+        try {
+            fileStorageService.deleteKnowledgeBase(fileKey);
+            log.info("已清理落库失败的文档上传对象，storageKey={}", fileKey);
+        } catch (RuntimeException cleanupException) {
+            originalException.addSuppressed(cleanupException);
+            log.error("文档落库失败后清理对象失败，key: {}", fileKey, cleanupException);
+        }
+    }
+
+    private record UploadOutcome(Long documentId, String filename, boolean reused) {
     }
 }
