@@ -72,6 +72,13 @@ public class DocumentController {
         return R.ok(result,"获取预签名成功");
     }
 
+    /**
+     * 批量删除文档
+     * @param jwt
+     * @param knowledgeBaseId
+     * @param ids
+     * @return
+     */
     @DeleteMapping("/deleteBatch/{knowledgeBaseId}")
     public R<List<Long>> deleteBatch(
             @AuthenticationPrincipal Jwt jwt,
@@ -79,5 +86,19 @@ public class DocumentController {
             @RequestParam(value = "ids", required = false) List<Long> ids
     ) {
         return R.ok(documentService.deleteBatch(Long.valueOf(jwt.getSubject()), knowledgeBaseId, ids));
+    }
+    /**
+     * 删除知识库,连带删除知识库下文档
+     * @param jwt
+     * @param id
+     * @return
+     */
+    @DeleteMapping("/deleteKnowledgeBase/{knowledgeBaseId}")
+    public R<Void> deleteKnowledgeBase(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("knowledgeBaseId") Long id
+    ){
+        documentService.deleteKnowledgeBase(Long.valueOf(jwt.getSubject()), id);
+        return R.ok("知识库删除成功");
     }
 }

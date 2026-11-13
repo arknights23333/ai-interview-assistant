@@ -31,4 +31,19 @@ public interface DocumentMapper  extends BaseMapper<DocumentPo> {
             @Param("userId") Long userId,
             @Param("knowledgeBaseId") Long knowledgeBaseId
     );
+    @Select(value = """
+       <script>
+       DELETE FROM document AS d
+            USING knowledge_base AS kb
+            WHERE d.knowledge_base_id = kb.id
+              AND kb.user_id = #{userId}
+              AND d.knowledge_base_id = #{knowledgeBaseId}
+       RETURNING d.id, d.storage_key
+       </script>
+        """,affectData = true)
+    @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
+    List<DocumentPo> deleteDocumentByKnowledgeBaseAndReturn(
+            @Param("userId") Long userId,
+            @Param("knowledgeBaseId") Long knowledgeBaseId
+    );
 }

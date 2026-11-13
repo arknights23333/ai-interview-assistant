@@ -51,4 +51,11 @@ public interface DocumentService extends IService<DocumentPo> {
      * @return
      */
     List<Long> deleteBatch(Long userId, Long knowledgeBaseId, List<Long> ids);
+
+    /**
+     * 删除知识库,连带删除知识库下文档
+     * @param userId
+     * @param id
+     */
+    void deleteKnowledgeBase(Long userId, Long id);
 }
