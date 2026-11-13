@@ -42,4 +42,13 @@ public interface DocumentService extends IService<DocumentPo> {
      * @return
      */
     String download(Long userId, Long documentId);
+
+    /**
+     * 批量删除文档
+     * @param userId
+     * @param knowledgeBaseId 所属知识库 ID
+     * @param ids
+     * @return
+     */
+    List<Long> deleteBatch(Long userId, Long knowledgeBaseId, List<Long> ids);
 }

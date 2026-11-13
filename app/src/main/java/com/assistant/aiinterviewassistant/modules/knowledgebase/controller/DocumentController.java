@@ -72,4 +72,12 @@ public class DocumentController {
         return R.ok(result,"获取预签名成功");
     }
 
+    @DeleteMapping("/deleteBatch/{knowledgeBaseId}")
+    public R<List<Long>> deleteBatch(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("knowledgeBaseId") Long knowledgeBaseId,
+            @RequestParam(value = "ids", required = false) List<Long> ids
+    ) {
+        return R.ok(documentService.deleteBatch(Long.valueOf(jwt.getSubject()), knowledgeBaseId, ids));
+    }
 }

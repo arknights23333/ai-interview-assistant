@@ -6,6 +6,7 @@ import com.assistant.aiinterviewassistant.common.exception.enums.KnowledgeBaseEr
 import com.assistant.aiinterviewassistant.common.exception.exception.BusinessException;
 import com.assistant.aiinterviewassistant.infrastructure.document.service.ContentTypeDetectionService;
 import com.assistant.aiinterviewassistant.infrastructure.document.service.FileHashService;
+import com.assistant.aiinterviewassistant.infrastructure.storage.domain.StorageDeleteModels;
 import com.assistant.aiinterviewassistant.infrastructure.storage.service.FileStorageService;
 import com.assistant.aiinterviewassistant.modules.knowledgebase.constant.DocumentParseStatusConstant;
 import com.assistant.aiinterviewassistant.modules.knowledgebase.domain.po.DocumentPo;
@@ -14,6 +15,7 @@ import com.assistant.aiinterviewassistant.modules.knowledgebase.domain.vo.Docume
 import com.assistant.aiinterviewassistant.modules.knowledgebase.service.DocumentService;
 import com.assistant.aiinterviewassistant.modules.knowledgebase.domain.po.KnowledgeBasePo;
 import com.assistant.aiinterviewassistant.modules.knowledgebase.mapper.KnowledgeBaseMapper;
+import com.assistant.aiinterviewassistant.modules.resume.domain.po.ResumePo;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
@@ -28,7 +30,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -130,6 +135,49 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, DocumentPo>
         requireOwnedKnowledgeBase(document.getKnowledgeBaseId(), userId);
 
         return fileStorageService.fileDownload(document.getStorageKey(), document.getOriginalFilename());
+    }
+
+    @Override
+    public List<Long> deleteBatch(Long userId, Long knowledgeBaseId, List<Long> ids) {
+        if (ids == null || ids.isEmpty() || ids.stream().anyMatch(id -> id == null || id <= 0)) {
+            throw new BusinessException(DocumentErrorCode.INVALID_DOCUMENT_IDS);
+        }
+        requireOwnedKnowledgeBase(knowledgeBaseId, userId);
+
+        List<Long> target = ids.stream().distinct().toList();
+
+        List<DocumentPo> deletedPo = getBaseMapper().deleteBatchAndReturn(target, userId, knowledgeBaseId);
+
+        Set<Long> deletedIds = deletedPo.stream()
+                .map(DocumentPo::getId)
+                .collect(Collectors.toSet());
+
+        List<Long> undelete = target.stream().filter(id -> !deletedIds.contains(id)).toList();
+
+        if(deletedPo.size() == 0){
+            return undelete;
+        }
+
+
+        log.info("删除完成，userId={},requested={} deleted={} undeleted={}",userId,target.size(),deletedIds.size(),target.size()-deletedIds.size());
+
+        Map<String, Long> idByKey = deletedPo.stream().
+                collect(Collectors.toMap(DocumentPo::getStorageKey, DocumentPo::getId));
+        try {
+            StorageDeleteModels.BatchDeleteResult<Long> result = fileStorageService.fileDeleteBatch(idByKey);
+            log.info("文档原文件批量清理完成，userId={} deleted={} failed={}",
+                    userId, result.successIds().size(), result.failures().size());
+            for(var failure : result.failures()){
+                log.warn("文档原文件待补删 documentId={} storageKey={} code={} s3Code={} reason={}",
+                        failure.id(), failure.key(), failure.code(), failure.s3Code(), failure.errorMessage());
+            }
+        }catch (RuntimeException e) {
+            // 删库已经提交，保留旧对象键和对应简历 ID，便于后台人工补删。
+            log.error("文档源文件清理异常，待补删对象及文档 ID={}", idByKey, e);
+        }
+
+        return undelete;
+
     }
 
     /**
