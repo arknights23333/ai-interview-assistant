@@ -85,20 +85,6 @@ public class DocumentController {
             @PathVariable("knowledgeBaseId") Long knowledgeBaseId,
             @RequestParam(value = "ids", required = false) List<Long> ids
     ) {
-        return R.ok(documentService.deleteBatch(Long.valueOf(jwt.getSubject()), knowledgeBaseId, ids));
-    }
-    /**
-     * 删除知识库,连带删除知识库下文档
-     * @param jwt
-     * @param id
-     * @return
-     */
-    @DeleteMapping("/deleteKnowledgeBase/{knowledgeBaseId}")
-    public R<Void> deleteKnowledgeBase(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable("knowledgeBaseId") Long id
-    ){
-        documentService.deleteKnowledgeBase(Long.valueOf(jwt.getSubject()), id);
-        return R.ok("知识库删除成功");
+        return R.ok(documentService.deleteBatch(Long.valueOf(jwt.getSubject()), knowledgeBaseId, ids),"删除结果如上");
     }
 }

@@ -23,6 +23,9 @@ public interface KnowledgeBaseService {
      */
     void updateKnowledgeBaseName(Long userId, Long id, KnowledgeBaseNameDto dto);
 
+    /** 删除当前用户的指定知识库及其下的所有文档。 */
+    void deleteKnowledgeBase(Long userId, Long knowledgeBaseId);
+
     /**
      * 查询知识库列表
      * @param userId

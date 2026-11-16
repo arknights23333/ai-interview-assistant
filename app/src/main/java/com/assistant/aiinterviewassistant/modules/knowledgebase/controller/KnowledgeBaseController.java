@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,6 +46,14 @@ public class KnowledgeBaseController {
                                            @Valid @RequestBody KnowledgeBaseNameDto dto) {
         knowledgeBaseService.updateKnowledgeBaseName(Long.valueOf(jwt.getSubject()), id, dto);
         return R.ok("修改成功");
+    }
+
+    /** 删除知识库及其下的所有文档。 */
+    @DeleteMapping("/delete/{knowledgeBaseId}")
+    public R<Void> deleteKnowledgeBase(@AuthenticationPrincipal Jwt jwt,
+                                       @PathVariable("knowledgeBaseId") Long knowledgeBaseId) {
+        knowledgeBaseService.deleteKnowledgeBase(Long.valueOf(jwt.getSubject()), knowledgeBaseId);
+        return R.ok("知识库删除成功");
     }
 
     /** 分页查询知识库。 */
