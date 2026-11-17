@@ -14,4 +14,13 @@ public interface InterviewSessionQuestionService extends IService<InterviewSessi
      * @param questions 已排序的主问题草稿
      */
     void saveMainQuestions(Long sessionId, List<MainQuestionDraft> questions);
+
+    /**
+     * 按照面试会话id和题目id查询单道题目
+     * @param userId
+     * @param sessionId
+     * @param questionId
+     * @return
+     */
+    List<InterviewSessionQuestionPo> selectOneQeustion(Long sessionId,List<Long> questionId);
 }

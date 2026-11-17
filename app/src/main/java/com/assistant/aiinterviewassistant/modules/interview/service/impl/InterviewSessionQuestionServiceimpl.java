@@ -6,6 +6,7 @@ import com.assistant.aiinterviewassistant.modules.interview.domain.dto.MainQuest
 import com.assistant.aiinterviewassistant.modules.interview.domain.po.InterviewSessionQuestionPo;
 import com.assistant.aiinterviewassistant.modules.interview.mapper.InterviewSessionQuestionMapper;
 import com.assistant.aiinterviewassistant.modules.interview.service.InterviewSessionQuestionService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
@@ -59,5 +60,23 @@ public class InterviewSessionQuestionServiceimpl extends ServiceImpl<InterviewSe
         if (!saved) {
             throw new BusinessException(InterviewErrorCode.INTERVIEW_QUESTION_SAVE_FAILED);
         }
+    }
+
+    @Override
+    public List<InterviewSessionQuestionPo> selectOneQeustion( Long sessionId, List<Long> questionId) {
+        if (sessionId == null || sessionId <= 0) {
+            throw new BusinessException(InterviewErrorCode.INVALID_INTERVIEW_ID);
+        }
+        if (questionId != null && questionId.isEmpty()) {
+            return List.of();
+        }
+        LambdaQueryWrapper<InterviewSessionQuestionPo> wrapper = new LambdaQueryWrapper<InterviewSessionQuestionPo>()
+                .eq(InterviewSessionQuestionPo::getSessionId,sessionId)
+                .in(questionId!=null,InterviewSessionQuestionPo::getId,questionId)
+                .orderByAsc(
+                        InterviewSessionQuestionPo::getRoundNo,
+                        InterviewSessionQuestionPo::getFollowUpNo
+                );
+        return list(wrapper);
     }
 }
