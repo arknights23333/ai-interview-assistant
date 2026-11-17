@@ -11,7 +11,7 @@ import org.springframework.http.HttpStatus;
 public enum InterviewErrorCode implements BusinessErrorCode {
 
     INVALID_INTERVIEW_ID(40021, HttpStatus.BAD_REQUEST, "面试会话或题目 ID 必须为正整数"),
-    INVALID_QUESTION_BATCH(40022, HttpStatus.BAD_REQUEST, "题目列表为空或题目内容、顺序不合法"),
+    INVALID_QUESTION(40022, HttpStatus.BAD_REQUEST, "题目列表为空或题目内容、顺序不合法"),
 
     /** 会话不存在、已删除或不属于当前用户时统一返回。 */
     INTERVIEW_SESSION_NOT_FOUND(40406, HttpStatus.NOT_FOUND, "面试会话不存在,或不属于当前用户"),
