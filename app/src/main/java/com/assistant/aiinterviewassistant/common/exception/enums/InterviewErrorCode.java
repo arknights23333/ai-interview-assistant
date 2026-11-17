@@ -14,8 +14,8 @@ public enum InterviewErrorCode implements BusinessErrorCode {
     INVALID_QUESTION_BATCH(40022, HttpStatus.BAD_REQUEST, "题目列表为空或题目内容、顺序不合法"),
 
     /** 会话不存在、已删除或不属于当前用户时统一返回。 */
-    INTERVIEW_SESSION_NOT_FOUND(40406, HttpStatus.NOT_FOUND, "面试会话不存在"),
-    INTERVIEW_QUESTION_NOT_FOUND(40407, HttpStatus.NOT_FOUND, "面试题目不存在"),
+    INTERVIEW_SESSION_NOT_FOUND(40406, HttpStatus.NOT_FOUND, "面试会话不存在,或不属于当前用户"),
+    INTERVIEW_QUESTION_NOT_FOUND(40407, HttpStatus.NOT_FOUND, "面试题目不存在，或不属于当前用户"),
 
     /** 已交卷或当前题变化等导致操作不再适用。 */
     INTERVIEW_STATE_CONFLICT(40907, HttpStatus.CONFLICT, "面试状态已变化，请刷新后重试"),

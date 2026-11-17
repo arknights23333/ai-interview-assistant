@@ -16,11 +16,19 @@ public interface InterviewSessionQuestionService extends IService<InterviewSessi
     void saveMainQuestions(Long sessionId, List<MainQuestionDraft> questions);
 
     /**
-     * 按照面试会话id和题目id查询单道题目
-     * @param userId
+     * 按照面试会话id和题目id查询题目
      * @param sessionId
      * @param questionId
      * @return
      */
     List<InterviewSessionQuestionPo> selectOneQeustion(Long sessionId,List<Long> questionId);
+
+    /**
+     * 按照面试会话id和题目id保存答案
+     * @param sessionId
+     * @param questionId
+     * @param answer
+     * @return
+     */
+    boolean saveAnswer(Long sessionId , Long questionId,String answer);
 }
