@@ -22,7 +22,7 @@ public interface InterviewSessionQuestionService extends IService<InterviewSessi
      * @param questionId
      * @return
      */
-    List<InterviewSessionQuestionPo> selectOneQeustion(Long sessionId,List<Long> questionId);
+    List<InterviewSessionQuestionPo> selectQuestions(Long sessionId,List<Long> questionId);
 
     /**
      * 按照面试会话id和题目id保存答案

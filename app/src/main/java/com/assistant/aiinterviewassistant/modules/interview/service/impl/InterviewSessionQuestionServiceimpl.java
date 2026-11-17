@@ -68,7 +68,7 @@ public class InterviewSessionQuestionServiceimpl extends ServiceImpl<InterviewSe
     }
 
     @Override
-    public List<InterviewSessionQuestionPo> selectOneQeustion( Long sessionId, List<Long> questionId) {
+    public List<InterviewSessionQuestionPo> selectQuestions( Long sessionId, List<Long> questionId) {
         if (sessionId == null || sessionId <= 0) {
             throw new BusinessException(InterviewErrorCode.INVALID_INTERVIEW_ID);
         }
