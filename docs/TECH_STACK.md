@@ -1,49 +1,67 @@
-# 技术栈与接入状态
+# 技术栈、接入状态与模块概况
 
-更新日期：2026-10-24。适用项目：`D:\ai-interview-assistant`。
+更新日期：2026-11-18。适用项目：`D:\ai-interview-assistant`。
 
-版本以本项目构建文件为准；“依赖已加入”“工具已联调”和“业务已完成”分别记录。参考项目 `D:\interview-guide` 只用于学习，不是本项目交付目录。
+本页汇总跨模块接手所需的实际状态。版本依据为构建与配置文件；实现状态通过本地源码核对；手动验证结论来自用户在本聊天中的反馈。本轮文档更新只做静态检查，未重新运行应用、迁移或测试。开始新任务时检查最新代码和工作区，避免把历史验证视为当前回归结果。
 
 ## 当前技术栈
 
-| 范围 | 技术 / 版本依据 | 当前状态 |
+| 范围 | 配置依据 | 接入状态 |
 | --- | --- | --- |
-| Java | Java 25，app/build.gradle toolchain | 已配置；命令行默认 JDK 与 Gradle 工具链可能不同 |
-| 应用框架 | Spring Boot 4.1.1，gradle/libs.versions.toml | 已接入 Web MVC、Validation 等基础能力 |
-| 构建 | Gradle 9.8.2 Wrapper；dependency-management 插件 1.1.7 | 根项目组织构建，app 为唯一后端子项目 |
-| 持久层 | MyBatis-Plus 3.5.17，mybatis-plus-spring-boot4-starter | 已加入依赖，按 ID 查询已联调；JPA 已移除 |
-| 数据库 | PostgreSQL 16，Compose 镜像 pgvector/pgvector:pg16 | 本地数据库已使用；镜像包含 pgvector 不等于已实现向量检索 |
-| 迁移 | Spring Boot Flyway Starter + flyway-database-postgresql，版本随 Boot 管理 | V1__create_user_table.sql 定义 app_user；历史表已查看，查询成功由用户确认 |
-| 缓存 | Redis 7 + Spring Data Redis | 本地依赖和连接测试已有；登录会话、验证码和业务限流待实现 |
-| 认证 | Spring Security，版本由 Boot 管理 | 仅默认 Basic Auth 查询联调成功，数据库认证及自定义安全规则待接入 |
-| 密码 | Spring Security BCryptPasswordEncoder | 本地已用库生成并验证测试摘要；应用内 PasswordEncoder Bean 尚未配置 |
-| Token | JWT + Redis 登录会话 | 方案已确定；JWT 库、签名配置、会话键和有效期尚未落实，不宣称已集成 |
-| 前端 | Vue ^3.5.42、TypeScript ~6.0.0、Vite ^8.2.2、Vue Router ^5.3.1、Pinia ^4.0.3 | package.json 声明范围，实际安装精确版本以 package-lock.json 为准；当前为骨架 |
-| Node.js | package.json engines：^22.18.0 或 >=24.12.0 | 项目环境要求，不把范围写成已安装版本 |
-| 开发辅助 | Lombok、DevTools | 已接入 |
-| 接口工具 | Apifox + IDEA Apifox Helper | 接口已同步并测试；根目录 .apifox-helper.properties 支持 @folder / @ignore |
+| Java | app/build.gradle：Java 25 | 已配置工具链 |
+| 框架 | gradle/libs.versions.toml：Spring Boot 4.1.1 | Web MVC、Validation、Security、Mail 等已接入 |
+| 构建 | Gradle Wrapper 9.8.2；dependency-management 1.1.7 | app 为唯一后端子项目 |
+| 持久层 | MyBatis-Plus 3.5.17，Boot 4 Starter | 已用于各模块，含分页插件与 Mapper 扫描；当前不使用 JPA |
+| 数据库 | Compose：pgvector/pgvector:pg16 | 已使用 PostgreSQL；尚未建立业务向量检索链路 |
+| 迁移 | Spring Boot Flyway Starter、PostgreSQL 支持 | 仓库有 V1～V8，见下表；执行历史需按本机环境核实 |
+| 缓存 | Compose Redis 7、Spring Data Redis | 已用于登录会话、验证码和发送间隔控制，支持 Lua 原子操作 |
+| 认证 | Spring Security、BCrypt、Resource Server JWT | 已实现账号认证、JWT 签发与校验、Redis 会话验证、退出和统一认证响应 |
+| 邮件 | Spring Mail / SMTP | 已实现发送验证码，按用途隔离和消费 |
+| 存储 | RustFS、AWS SDK S3 2.25.27 | 已实现上传、服务端下载、预签名下载、单个及批量删除 |
+| 文档 | Apache Tika 3.3.3 | 已接入类型检测、解析、文本清洗及哈希服务，配置专用解析线程池 |
+| JSON | Spring Boot 管理的 Jackson | 项目使用 Jackson 3 的 tools.jackson 包；JSONB 字符串有专用 MyBatis TypeHandler |
+| 前端 | Vue ^3.5.42、TypeScript ~6.0.0、Vite ^8.2.2、Vue Router ^5.3.1、Pinia ^4.0.3 | front/ 为初始工程；完整业务页面尚待建设 |
+| Node.js | front/package.json：^22.18.0 或 >=24.12.0 | 记录项目要求，实际安装版本另核实 |
+| 联调 | Apifox、IDEA Apifox Helper | 根目录配置分组、身份参数忽略、分页 Query 导出与可空字段 |
 
-## 已确定、尚待实现的能力
+## 业务模块概况
 
-- 数据库账号认证 → 登录签发 JWT 并建立 Redis 会话 → 请求校验与当前用户 → 退出使会话失效。
-- 邮箱注册验证与找回密码：SMTP 发件 + Redis 验证码；发件服务商与凭证未配置。正式注册验证成功后再建用户，普通登录仍为账号密码；首版不做短信验证。
-- Spring AI：尚未加入依赖。LLM 候选、固定 Embedding、百炼/腾讯 ASR/TTS 按 [模型选型](MODEL_SELECTION.md) 执行，接入时核实实际权限与版本。
-- pgvector 业务索引、文档处理、Redis Stream、对象存储、文件解析与报告导出尚未实现；不从参考工程直接推断已接入的库。
+| 模块 | 已有实现 | 后续范围 | 验证依据 |
+| --- | --- | --- | --- |
+| user | 注册、登录、退出、验证码、修改和重置密码、改绑邮箱、本人资料及昵称修改 | 持续核对需求中的频控、权限与资料扩展 | 用户已反馈主要认证、邮箱和密码流程手测通过；已有部分自动测试代码 |
+| resume | 单个/批量上传、去重与回收站恢复、异步正文解析、详情、分页、预签名下载、回收站操作和批删 | AI 简历分析、报告展示与导出 | 用户已反馈基础接口和多格式正文解析测试通过 |
+| schedule | 新增、修改、状态变更、分页筛选、批量删除 | 邀请解析、提醒及前端日历 | 用户已反馈基本 CRUD 和状态接口手测通过 |
+| knowledgebase | 知识库创建、改名、分页和整库删除；文档批量上传、分页、单个下载和批删 | 文档处理链路、切片、向量化、RAG 会话与引用 | 用户已反馈这 8 个基础接口的成功、失败及归属用例通过 |
+| interview | 会话及本场题目表、PO/Mapper；主问题批保存、题目查询、首次作答、追加追问；会话列表和详情 | 会话创建已建入口但仍为占位，删除、作答推进和结束流程待编排；后续接 AI | 当前以静态检查为依据，未把本轮讨论记作整模块联调通过 |
+| questionbank | 包结构预留 | 题目表、维护接口、状态管理、生成和专项抽题 | 业务尚未实现 |
+| model | 包结构预留 | 聊天模型路由与配置、固定 Embedding、语音供应商适配 | 业务尚未实现 |
+| interview/evaluation、voice | 包结构预留 | 评价任务、报告、语音面试 | 业务尚未实现 |
 
-## 结构与接口约定
+主流程仍先完成建表和基础 CRUD。Spring AI 尚未加入依赖，Redis Stream 消费基础设施、AI 评价、业务向量表、RAG 与 PDF 导出留在后续迭代。未来能力的模块职责见 [架构](ARCHITECTURE.md)，验收范围见 [SRS](requirements/SRS.md)。
 
-- 业务包采用 controller / service / mapper / domain；实现类位于 service/impl。
-- domain/po 存放持久化对象，domain/dto 存放请求和传输对象，domain/vo 按需存放展示响应。类型名采用 UserPo、UserVo 等驼峰形式。
-- Mapper 用于数据库访问；对象转换另设职责。当前 user 使用 IService / ServiceImpl，Service 查询方法是 getById，Mapper 方法是 selectById。
-- R<T> 响应字段为 code、msg、data，成功业务码 200、通用失败业务码 500。业务码不等同于 HTTP 状态码，Security 失败及全局异常统一 JSON 仍待实现。
-- app_user 有 id、username、email、password_hash、nickname、avatar、role、status、created_at、updated_at 十个字段；账号区分大小写唯一，邮箱不区分大小写唯一，角色 USER/ADMIN，状态 ACTIVE/DISABLED。
-- 主键使用 Long；时间使用 OffsetDateTime。PO 含密码摘要，不能直接作为接口响应。
-- 当前 GET /api/user/auth/{userID} 为开发联调入口；按 ID 查他人资料的行为不能沿用为普通用户正式访问规则。开发接口需在正式账号权限接入时收口。
-- Flyway 创建和升级表结构，JPA 的 ddl-auto 已移除。开发测试账号不作为生产默认账号。
-- API Key、个人访问令牌和真实登录凭证不写入文档或 Git；尚未完成的配置整改不能被描述为已完成。
+## 数据迁移入口
 
-## 本次状态依据与验证
+| 版本 | 内容 |
+| --- | --- |
+| V1 | app_user 用户表 |
+| V2 | 邮箱仅域名转小写的唯一性规则 |
+| V3 | resume、resume_analysis |
+| V4 | 用户和简历哈希全记录唯一，包含回收站记录 |
+| V5 | interview_schedule |
+| V6 | knowledge_base、document |
+| V7 | interview_session、interview_session_question |
+| V8 | 允许提交空答案，仍要求答案与提交时间成对保存 |
 
-版本来自 app/build.gradle、gradle/libs.versions.toml、Gradle Wrapper、docker-compose.yml、front/package.json；接入状态来自当前源码和本次聊天中的实际联调结果。最近的后端测试曾通过，但不能替代每次后续修改的验证；本次只更新文档，不新增功能完成声明。
+执行过的迁移通过新增版本修改。数据库最终结构以完整迁移链及本机 Flyway 历史为准。
 
-接口与需求见 [SRS](requirements/SRS.md)，包边界见 [架构说明](ARCHITECTURE.md)。
+## 跨模块接手要点
+
+- 统一响应 `R<T>` 包含 code、msg、data，HTTP 状态按异常类型返回。本人身份来自认证后的 JWT。
+- 用户邮箱唯一性保留本地部分大小写，仅域名不区分大小写。
+- 简历按用户、文件名与内容共同计算的哈希去重；知识库文档按知识库与内容哈希去重，复用时返回原记录文件名。
+- 简历是回收站加物理删除；日程物理删除；文档和整库删除先完成数据库删除，再清理对象存储，清理失败记日志供补删。当前没有自动补删任务。
+- 知识库文档每批最多 5 份，每份最多 50 MiB；上传失败逐项返回。基础存储能力不承担资源归属判断。
+- 预签名下载当前有效期 1 分钟。签名前检查对象存在，浏览器随后直接访问 RustFS。
+- 前端分页走 URL Query，筛选对象按 Controller 的请求体声明传。避免同名分页参数同时出现在 Query 和表单。
+- `GET /api/user/auth/{userID}` 旧开发查询入口仍在代码中；普通用户本人资料使用 `GET /api/user/me`，旧入口权限收口需单独审查。
+- 参考项目是 D:\interview-guide，其 JPA、React 或完成情况不代表本仓库采用相同技术或已实现同样功能。
