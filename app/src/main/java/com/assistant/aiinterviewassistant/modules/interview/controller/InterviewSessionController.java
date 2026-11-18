@@ -3,6 +3,7 @@ package com.assistant.aiinterviewassistant.modules.interview.controller;
 import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.response.R;
 import com.assistant.aiinterviewassistant.modules.interview.domain.dto.InterviewSessionQueryDto;
+import com.assistant.aiinterviewassistant.modules.interview.domain.dto.SessionCreateDto;
 import com.assistant.aiinterviewassistant.modules.interview.domain.vo.InterviewSessionDetailVo;
 import com.assistant.aiinterviewassistant.modules.interview.domain.vo.InterviewSessionSummaryVo;
 import com.assistant.aiinterviewassistant.modules.interview.service.InterviewSessionService;
@@ -46,5 +47,12 @@ public class InterviewSessionController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable("sessionId") Long sessionId) {
         return R.ok(interviewSessionService.getInterviewSessionDetail(sessionId, Long.valueOf(jwt.getSubject())));
+    }
+    @PostMapping("/create")
+    public R<Long> createSession(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody SessionCreateDto dto
+    ){
+        return R.ok(interviewSessionService.createSession(Long.valueOf(jwt.getSubject()),dto),"面试训练创建成功");
     }
 }

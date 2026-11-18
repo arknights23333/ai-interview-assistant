@@ -459,7 +459,8 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
      * @param userId 当前用户 ID
      * @return 当前用户可访问且未删除的简历
      */
-    private ResumePo getAvailableResumeOrThrow(Long resumeId, Long userId) {
+    @Override
+    public ResumePo getAvailableResumeOrThrow(Long resumeId, Long userId) {
         ResumePo resume = getOne(new LambdaQueryWrapper<ResumePo>()
                 .eq(ResumePo::getId, resumeId)
                 .eq(ResumePo::getUserId, userId)

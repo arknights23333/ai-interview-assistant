@@ -29,7 +29,7 @@ public class InterviewSessionQuestionServiceimpl extends ServiceImpl<InterviewSe
 
     @Override
     @Transactional
-    public void saveMainQuestions(Long sessionId, List<MainQuestionDraft> questions) {
+    public Long saveMainQuestions(Long sessionId, List<MainQuestionDraft> questions) {
         if (questions == null || questions.isEmpty()) {
             throw new BusinessException(InterviewErrorCode.INVALID_QUESTION);
         }
@@ -62,9 +62,11 @@ public class InterviewSessionQuestionServiceimpl extends ServiceImpl<InterviewSe
             throw new BusinessException(InterviewErrorCode.INTERVIEW_QUESTION_SAVE_FAILED, e);
         }
 
-        if (!saved) {
+        Long firstQuestionId = records.getFirst().getId();
+        if (!saved || firstQuestionId == null) {
             throw new BusinessException(InterviewErrorCode.INTERVIEW_QUESTION_SAVE_FAILED);
         }
+        return firstQuestionId;
     }
 
     @Override

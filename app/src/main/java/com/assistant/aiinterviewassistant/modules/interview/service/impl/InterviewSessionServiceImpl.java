@@ -3,20 +3,27 @@ package com.assistant.aiinterviewassistant.modules.interview.service.impl;
 import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.exception.enums.InterviewErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.exception.BusinessException;
+import com.assistant.aiinterviewassistant.modules.interview.constant.InterviewSourceTypeConstant;
 import com.assistant.aiinterviewassistant.modules.interview.domain.dto.InterviewSessionQueryDto;
+import com.assistant.aiinterviewassistant.modules.interview.domain.dto.SessionCreateDto;
 import com.assistant.aiinterviewassistant.modules.interview.domain.po.InterviewSessionPo;
 import com.assistant.aiinterviewassistant.modules.interview.domain.po.InterviewSessionQuestionPo;
 import com.assistant.aiinterviewassistant.modules.interview.domain.vo.InterviewQuestionVo;
 import com.assistant.aiinterviewassistant.modules.interview.domain.vo.InterviewSessionDetailVo;
 import com.assistant.aiinterviewassistant.modules.interview.domain.vo.InterviewSessionSummaryVo;
 import com.assistant.aiinterviewassistant.modules.interview.mapper.InterviewSessionMapper;
+import com.assistant.aiinterviewassistant.modules.interview.service.InterviewSessionQuestionService;
 import com.assistant.aiinterviewassistant.modules.interview.service.InterviewSessionService;
+import com.assistant.aiinterviewassistant.modules.knowledgebase.service.KnowledgeBaseService;
+import com.assistant.aiinterviewassistant.modules.resume.service.ResumeService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
@@ -27,7 +34,9 @@ import java.util.List;
 public class InterviewSessionServiceImpl extends ServiceImpl<InterviewSessionMapper, InterviewSessionPo>
         implements InterviewSessionService {
 
-    private final InterviewSessionQuestionServiceimpl questionService;
+    private final InterviewSessionQuestionService questionService;
+    private final ResumeService resumeService;
+    private final KnowledgeBaseService knowledgeBaseService;
 
     private final ObjectMapper objectMapper;
     @Override
@@ -121,5 +130,53 @@ public class InterviewSessionServiceImpl extends ServiceImpl<InterviewSessionMap
 
 
         return result;
+    }
+
+    @Override
+    @Transactional
+    public Long createSession(Long userId, SessionCreateDto dto) {
+        if (InterviewSourceTypeConstant.NORMAL.equals(dto.getSourceType())
+                && dto.getKnowledgeBaseId() != null) {
+            throw new BusinessException(InterviewErrorCode.INVALID_INTERVIEW_SOURCE);
+        }
+
+        if (InterviewSourceTypeConstant.KNOWLEDGE_BASE.equals(dto.getSourceType())
+                && dto.getKnowledgeBaseId() == null) {
+            throw new BusinessException(InterviewErrorCode.INVALID_INTERVIEW_SOURCE);
+        }
+        Long resumeId = dto.getResumeId();
+        if (resumeId != null) {
+            resumeService.getAvailableResumeOrThrow(resumeId, userId);
+        }
+        Long knowledgeBaseId = dto.getKnowledgeBaseId();
+        if (knowledgeBaseId != null) {
+            knowledgeBaseService.requireOwnedKnowledgeBase(knowledgeBaseId, userId);
+        }
+
+        InterviewSessionPo po = new InterviewSessionPo();
+        po.setSourceType(dto.getSourceType());
+        po.setJobDirection(dto.getJobDirection());
+        po.setDifficulty(dto.getDifficulty());
+        po.setResumeId(resumeId);
+        po.setKnowledgeBaseId(knowledgeBaseId);
+        po.setJobDescription(dto.getJobDescription());
+        po.setUserId(userId);
+        po.setMainQuestionCount(dto.getQuestions().size());
+
+        if (!save(po)) {
+            throw new BusinessException(InterviewErrorCode.INTERVIEW_SESSION_SAVE_FAILED);
+        }
+
+        Long sessionId = po.getId();
+        Long firstQuestionId = questionService.saveMainQuestions(sessionId, dto.getQuestions());
+
+        // 先保存题目，再设置当前题，满足当前题必须属于本会话的外键约束。
+        boolean updated = update(new LambdaUpdateWrapper<InterviewSessionPo>()
+                .eq(InterviewSessionPo::getId, sessionId)
+                .set(InterviewSessionPo::getCurrentQuestionId, firstQuestionId));
+        if (!updated) {
+            throw new BusinessException(InterviewErrorCode.INTERVIEW_SESSION_SAVE_FAILED);
+        }
+        return sessionId;
     }
 }

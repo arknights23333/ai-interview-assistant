@@ -13,8 +13,9 @@ public interface InterviewSessionQuestionService extends IService<InterviewSessi
      *
      * @param sessionId 所属面试会话 ID
      * @param questions 已排序的主问题草稿
+     * @return 第一题的数据库主键
      */
-    void saveMainQuestions(Long sessionId, List<MainQuestionDraft> questions);
+    Long saveMainQuestions(Long sessionId, List<MainQuestionDraft> questions);
 
     /**
      * 按照面试会话id和题目id查询题目

@@ -2,7 +2,6 @@ package com.assistant.aiinterviewassistant.modules.knowledgebase.service.impl;
 import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.exception.enums.DocumentErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.enums.FileErrorCode;
-import com.assistant.aiinterviewassistant.common.exception.enums.KnowledgeBaseErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.exception.BusinessException;
 import com.assistant.aiinterviewassistant.infrastructure.document.service.ContentTypeDetectionService;
 import com.assistant.aiinterviewassistant.infrastructure.document.service.FileHashService;
@@ -13,8 +12,7 @@ import com.assistant.aiinterviewassistant.modules.knowledgebase.domain.po.Docume
 import com.assistant.aiinterviewassistant.modules.knowledgebase.domain.vo.DocumentUploadBatchVo;
 import com.assistant.aiinterviewassistant.modules.knowledgebase.domain.vo.DocumentVo;
 import com.assistant.aiinterviewassistant.modules.knowledgebase.service.DocumentService;
-import com.assistant.aiinterviewassistant.modules.knowledgebase.domain.po.KnowledgeBasePo;
-import com.assistant.aiinterviewassistant.modules.knowledgebase.mapper.KnowledgeBaseMapper;
+import com.assistant.aiinterviewassistant.modules.knowledgebase.service.KnowledgeBaseService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
@@ -38,7 +36,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, DocumentPo> implements DocumentService {
 
-    private final KnowledgeBaseMapper knowledgeBaseMapper;
+    private final KnowledgeBaseService knowledgeBaseService;
 
     private final FileStorageService fileStorageService;
 
@@ -70,7 +68,7 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, DocumentPo>
         if(files.size() > MAX_BATCH_UPLOAD_FILES){
             throw new BusinessException(DocumentErrorCode.BATCH_UPLOAD_LIMIT_EXCEEDED);
         }
-        requireOwnedKnowledgeBase(knowledgeBaseId, userId);
+        knowledgeBaseService.requireOwnedKnowledgeBase(knowledgeBaseId, userId);
 
         List<DocumentUploadBatchVo> results = new ArrayList<>(files.size());
         for(int i =0 ;i<files.size();i++){
@@ -109,7 +107,7 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, DocumentPo>
 
     @Override
     public Page<DocumentVo> getList(Long userId, Long knowledgeBaseId, @Valid PageQuery pageQuery) {
-        requireOwnedKnowledgeBase(knowledgeBaseId, userId);
+        knowledgeBaseService.requireOwnedKnowledgeBase(knowledgeBaseId, userId);
         Page<DocumentPo> page = new Page<DocumentPo>(pageQuery.getPageNum(), pageQuery.getPageSize());
         LambdaQueryWrapper<DocumentPo> wrapper = new LambdaQueryWrapper<DocumentPo>()
                 .eq(DocumentPo::getKnowledgeBaseId, knowledgeBaseId)
@@ -132,7 +130,7 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, DocumentPo>
         if(document==null){
             throw new BusinessException(DocumentErrorCode.DOCUMENT_NOT_FOUND);
         }
-        requireOwnedKnowledgeBase(document.getKnowledgeBaseId(), userId);
+        knowledgeBaseService.requireOwnedKnowledgeBase(document.getKnowledgeBaseId(), userId);
 
         return fileStorageService.fileDownload(document.getStorageKey(), document.getOriginalFilename());
     }
@@ -142,7 +140,7 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, DocumentPo>
         if (ids == null || ids.isEmpty() || ids.stream().anyMatch(id -> id == null || id <= 0)) {
             throw new BusinessException(DocumentErrorCode.INVALID_DOCUMENT_IDS);
         }
-        requireOwnedKnowledgeBase(knowledgeBaseId, userId);
+        knowledgeBaseService.requireOwnedKnowledgeBase(knowledgeBaseId, userId);
 
         List<Long> target = ids.stream().distinct().toList();
 
@@ -252,16 +250,6 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, DocumentPo>
                 document.getId(), userId, storageKey, document.getFileSize());
         return new UploadOutcome(document.getId(), filename, false);
 
-    }
-
-    /** 校验知识库存在且属于当前用户。 */
-    private void requireOwnedKnowledgeBase(Long knowledgeBaseId, Long userId) {
-        boolean owned = knowledgeBaseMapper.selectCount(new LambdaQueryWrapper<KnowledgeBasePo>()
-                .eq(KnowledgeBasePo::getId, knowledgeBaseId)
-                .eq(KnowledgeBasePo::getUserId, userId)) > 0;
-        if (!owned) {
-            throw new BusinessException(KnowledgeBaseErrorCode.KNOWLEDGE_BASE_NOT_FOUND);
-        }
     }
 
     private DocumentPo filehasExist(String fileHash, Long knowledgeBaseId) {

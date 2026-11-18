@@ -63,14 +63,19 @@ public class KnowledgeBaseServiceImpl extends ServiceImpl<KnowledgeBaseMapper, K
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void deleteKnowledgeBase(Long userId, Long knowledgeBaseId) {
+    public void requireOwnedKnowledgeBase(Long knowledgeBaseId, Long userId) {
         boolean owned = count(new LambdaQueryWrapper<KnowledgeBasePo>()
                 .eq(KnowledgeBasePo::getId, knowledgeBaseId)
                 .eq(KnowledgeBasePo::getUserId, userId)) > 0;
         if (!owned) {
             throw new BusinessException(KnowledgeBaseErrorCode.KNOWLEDGE_BASE_NOT_FOUND);
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteKnowledgeBase(Long userId, Long knowledgeBaseId) {
+        requireOwnedKnowledgeBase(knowledgeBaseId, userId);
 
         // 外键限制要求先删除文档记录，再删除知识库。
         List<DocumentPo> documents = documentMapper.deleteDocumentByKnowledgeBaseAndReturn(userId, knowledgeBaseId);

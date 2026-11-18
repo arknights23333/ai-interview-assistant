@@ -7,6 +7,10 @@ import com.assistant.aiinterviewassistant.modules.knowledgebase.domain.vo.Knowle
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 public interface KnowledgeBaseService {
+
+    /** 校验知识库存在且属于当前用户。 */
+    void requireOwnedKnowledgeBase(Long knowledgeBaseId, Long userId);
+
     /**
      * 新增知识库
      * @param userId
