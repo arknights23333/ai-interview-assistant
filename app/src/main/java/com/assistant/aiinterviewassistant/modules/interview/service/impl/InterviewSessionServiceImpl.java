@@ -33,7 +33,35 @@ public class InterviewSessionServiceImpl extends ServiceImpl<InterviewSessionMap
     @Override
     public Page<InterviewSessionSummaryVo> listInterviewSessions(
             Long userId, InterviewSessionQueryDto dto, PageQuery pageQuery) {
-        throw new UnsupportedOperationException("面试会话分页查询待实现");
+        Page<InterviewSessionPo> page = new Page<InterviewSessionPo>(pageQuery.getPageNum(),pageQuery.getPageSize());
+        LambdaQueryWrapper<InterviewSessionPo> wrapper = new LambdaQueryWrapper<InterviewSessionPo> ();
+        wrapper.eq(InterviewSessionPo::getUserId, userId);
+        wrapper.eq(dto.getSourceType()!=null,InterviewSessionPo::getSourceType,dto.getSourceType());
+        String jobDirection = dto.getJobDirection();
+        wrapper.like(
+                jobDirection != null && !jobDirection.isBlank(),
+                InterviewSessionPo::getJobDirection,
+                jobDirection
+        );
+        wrapper.eq(dto.getStatus()!=null,InterviewSessionPo::getStatus,dto.getStatus());
+        wrapper.ge(dto.getCreatedFrom()!=null,InterviewSessionPo::getCreatedAt,dto.getCreatedFrom());
+        wrapper.lt(dto.getCreatedTo()!=null,InterviewSessionPo::getCreatedAt,dto.getCreatedTo());
+        wrapper.orderByDesc(InterviewSessionPo::getCreatedAt, InterviewSessionPo::getId);
+
+        Page<InterviewSessionPo> pagePo = page(page,wrapper);
+
+        List<InterviewSessionSummaryVo> resultList = pagePo.getRecords().stream().map(
+                po -> {
+                    InterviewSessionSummaryVo vo = new InterviewSessionSummaryVo();
+                    BeanUtils.copyProperties(po, vo);
+                    return vo;
+                }
+        ).toList();
+        Page<InterviewSessionSummaryVo> result = new Page<InterviewSessionSummaryVo>( pagePo.getCurrent(),
+                pagePo.getSize(),
+                pagePo.getTotal());
+        result.setRecords(resultList);
+       return result;
     }
 
     @Override
