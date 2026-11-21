@@ -27,7 +27,9 @@ public enum InterviewErrorCode implements BusinessErrorCode {
     INTERVIEW_QUESTION_SAVE_FAILED(50028, HttpStatus.INTERNAL_SERVER_ERROR, "面试题目或作答保存失败，请稍后重试"),
 
     /** 创建或保存面试会话失败。 */
-    INTERVIEW_SESSION_SAVE_FAILED(50029, HttpStatus.INTERNAL_SERVER_ERROR, "面试会话保存失败，请稍后重试");
+    INTERVIEW_SESSION_SAVE_FAILED(50029, HttpStatus.INTERNAL_SERVER_ERROR, "面试会话保存失败，请稍后重试"),
+
+    INTERVIEW_SESSION_DELETE_FAILED(50030, HttpStatus.INTERNAL_SERVER_ERROR, "面试会话删除失败，请稍后重试");
 
     private final int code;
     private final HttpStatus httpStatus;

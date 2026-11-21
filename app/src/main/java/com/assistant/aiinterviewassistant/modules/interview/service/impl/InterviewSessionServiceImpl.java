@@ -179,4 +179,23 @@ public class InterviewSessionServiceImpl extends ServiceImpl<InterviewSessionMap
         }
         return sessionId;
     }
+
+    @Override
+    @Transactional
+    public void deleteSession(Long userId, Long sessionId) {
+        if (sessionId == null || sessionId <= 0) {
+            throw new BusinessException(InterviewErrorCode.INVALID_INTERVIEW_ID);
+        }
+
+        InterviewSessionPo sessionPo = getOne(new LambdaQueryWrapper<InterviewSessionPo>()
+                .eq(InterviewSessionPo::getId, sessionId)
+                .eq(InterviewSessionPo::getUserId, userId));
+        if (sessionPo == null) {
+            throw new BusinessException(InterviewErrorCode.INTERVIEW_SESSION_NOT_FOUND);
+        }
+
+        if (!removeById(sessionId)) {
+            throw new BusinessException(InterviewErrorCode.INTERVIEW_SESSION_NOT_FOUND);
+        }
+    }
 }

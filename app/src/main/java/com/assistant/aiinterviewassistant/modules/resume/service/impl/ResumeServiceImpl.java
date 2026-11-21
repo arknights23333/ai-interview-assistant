@@ -222,6 +222,9 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, ResumePo> imple
                 ParseSubmitOutcome outcome = submitParse(resume, userId);
                 results.add(new ResumeParseBatchVo(resumeId, outcome, null, null));
             } catch (BusinessException e) {
+                if (e.getHttpStatus().is5xxServerError()) {
+                    log.error("批量提交解析任务失败，userId={} resumeId={} code={}", userId, resumeId, e.getCode(), e);
+                }
                 results.add(new ResumeParseBatchVo(
                         resumeId, ParseSubmitOutcome.FAILED, String.valueOf(e.getCode()), e.getMessage()));
             } catch (DataAccessException e) {

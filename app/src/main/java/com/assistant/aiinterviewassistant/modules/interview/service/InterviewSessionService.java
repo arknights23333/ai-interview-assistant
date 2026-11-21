@@ -19,4 +19,6 @@ public interface InterviewSessionService {
     InterviewSessionDetailVo getInterviewSessionDetail(Long sessionId, Long userId);
     /** 创建面试会话*/
     Long createSession(Long userId, @Valid SessionCreateDto dto);
+    /**  删除面试会话*/
+    void deleteSession(Long userId, @Valid Long sessionId);
 }

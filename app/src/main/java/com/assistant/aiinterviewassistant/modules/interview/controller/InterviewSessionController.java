@@ -12,13 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * 文字面试会话接口。
@@ -48,11 +42,26 @@ public class InterviewSessionController {
             @PathVariable("sessionId") Long sessionId) {
         return R.ok(interviewSessionService.getInterviewSessionDetail(sessionId, Long.valueOf(jwt.getSubject())));
     }
+
+    /**
+     * 创建文字面试会话接口
+     * @param jwt
+     * @param dto
+     * @return
+     */
     @PostMapping("/create")
     public R<Long> createSession(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody SessionCreateDto dto
     ){
         return R.ok(interviewSessionService.createSession(Long.valueOf(jwt.getSubject()),dto),"面试训练创建成功");
+    }
+    @DeleteMapping("/delete")
+    public R<Void> deleteSession(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody Long sessionId
+    ){
+        interviewSessionService.deleteSession(Long.valueOf(jwt.getSubject()),sessionId);
+        return R.ok("面试会话删除成功");
     }
 }
