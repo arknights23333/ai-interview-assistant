@@ -3,14 +3,18 @@ package com.assistant.aiinterviewassistant.modules.interview.service.impl;
 import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.exception.enums.InterviewErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.exception.BusinessException;
+import com.assistant.aiinterviewassistant.modules.interview.constant.InterviewSessionStatusConstant;
 import com.assistant.aiinterviewassistant.modules.interview.constant.InterviewSourceTypeConstant;
+import com.assistant.aiinterviewassistant.modules.interview.domain.dto.FollowUpQuestionDraft;
 import com.assistant.aiinterviewassistant.modules.interview.domain.dto.InterviewSessionQueryDto;
 import com.assistant.aiinterviewassistant.modules.interview.domain.dto.SessionCreateDto;
+import com.assistant.aiinterviewassistant.modules.interview.domain.dto.SubmitInterviewAnswerDto;
 import com.assistant.aiinterviewassistant.modules.interview.domain.po.InterviewSessionPo;
 import com.assistant.aiinterviewassistant.modules.interview.domain.po.InterviewSessionQuestionPo;
 import com.assistant.aiinterviewassistant.modules.interview.domain.vo.InterviewQuestionVo;
 import com.assistant.aiinterviewassistant.modules.interview.domain.vo.InterviewSessionDetailVo;
 import com.assistant.aiinterviewassistant.modules.interview.domain.vo.InterviewSessionSummaryVo;
+import com.assistant.aiinterviewassistant.modules.interview.domain.vo.SubmitInterviewAnswerVo;
 import com.assistant.aiinterviewassistant.modules.interview.mapper.InterviewSessionMapper;
 import com.assistant.aiinterviewassistant.modules.interview.service.InterviewSessionQuestionService;
 import com.assistant.aiinterviewassistant.modules.interview.service.InterviewSessionService;
@@ -21,14 +25,18 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.OffsetDateTime;
 import java.util.List;
-
+import java.util.Optional;
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class InterviewSessionServiceImpl extends ServiceImpl<InterviewSessionMapper, InterviewSessionPo>
@@ -39,6 +47,7 @@ public class InterviewSessionServiceImpl extends ServiceImpl<InterviewSessionMap
     private final KnowledgeBaseService knowledgeBaseService;
 
     private final ObjectMapper objectMapper;
+    private final TransactionTemplate transactionTemplate;
     @Override
     public Page<InterviewSessionSummaryVo> listInterviewSessions(
             Long userId, InterviewSessionQueryDto dto, PageQuery pageQuery) {
@@ -197,5 +206,114 @@ public class InterviewSessionServiceImpl extends ServiceImpl<InterviewSessionMap
         if (!removeById(sessionId)) {
             throw new BusinessException(InterviewErrorCode.INTERVIEW_SESSION_NOT_FOUND);
         }
+    }
+
+    @Override
+    public SubmitInterviewAnswerVo submitAnswer(SubmitInterviewAnswerDto dto, Long userId) {
+        Long sessionId = dto.getSessionId();
+        Long questionId = dto.getQuestionId();
+        // 先按用户和会话 ID 查本人面试。
+        InterviewSessionPo sessionPo = getOne(new LambdaQueryWrapper<InterviewSessionPo>()
+                .eq(InterviewSessionPo::getId, sessionId)
+                .eq(InterviewSessionPo::getUserId, userId));
+        if (sessionPo == null) {
+            throw new BusinessException(InterviewErrorCode.INTERVIEW_SESSION_NOT_FOUND);
+        }
+        // 只接受进行中会话的当前题，防止旧页面提交上一题。
+        if (!InterviewSessionStatusConstant.IN_PROGRESS.equals(sessionPo.getStatus())
+                || !questionId.equals(sessionPo.getCurrentQuestionId())) {
+            throw new BusinessException(InterviewErrorCode.INTERVIEW_STATE_CONFLICT);
+        }
+
+        // 在本场会话内读取题目，用轮次和追问序号决定答完后走哪个分支。
+        InterviewSessionQuestionPo questionPo = questionService.getOne(
+                new LambdaQueryWrapper<InterviewSessionQuestionPo>()
+                        .eq(InterviewSessionQuestionPo::getId, questionId)
+                        .eq(InterviewSessionQuestionPo::getSessionId, sessionId));
+        if (questionPo == null) {
+            throw new BusinessException(InterviewErrorCode.INTERVIEW_QUESTION_NOT_FOUND);
+        }
+
+        // 白卷照常记录为已答。仅主问题的非空白回答需要一次 AI 决策，追问答完直接推进。
+        String answer = dto.getAnswer();
+        if (answer == null || answer.isBlank()) {
+            answer = "";
+        }
+        Optional<FollowUpQuestionDraft> followUp = Optional.empty();
+        if (questionPo.getFollowUpNo() == 0 && !answer.isEmpty()) {
+            followUp = generateFollowUpQuestionDraft(questionPo, answer);
+        }
+
+        return persistAnswerAndAdvance(sessionPo, questionPo, answer, followUp);
+    }
+
+    /**
+     * 在同一事务中保存本题答案并推进会话。需要追问时进入本轮追问，否则进入下一轮主问题或结束面试。
+     *
+     * @param followUp 本次生成的追问草稿，{@link Optional#empty()} 表示跳过追问
+     * @return 提交后的会话状态；进行中时包含下一题，结束时下一题字段为空
+     */
+    private SubmitInterviewAnswerVo persistAnswerAndAdvance(
+            InterviewSessionPo session, InterviewSessionQuestionPo question,
+            String answer, Optional<FollowUpQuestionDraft> followUp) {
+        // AI 决策已完成。以下写入同一事务，推进失败时一起回滚，可重新提交。
+        return transactionTemplate.execute(transaction -> {
+            if (!questionService.saveAnswer(session.getId(), question.getId(), answer)) {
+                throw new BusinessException(InterviewErrorCode.INTERVIEW_STATE_CONFLICT);
+            }
+
+            InterviewSessionQuestionPo next = null;
+            if (followUp.isPresent()) {
+                // 最后一轮的主问题也可能需要追问，先处理追问，再判断是否结束。
+                next = questionService.appendFollowUpQuestion(session.getId(), question.getId(), followUp.get());
+            } else if (question.getRoundNo() < session.getMainQuestionCount()) {
+                next = questionService.getOne(new LambdaQueryWrapper<InterviewSessionQuestionPo>()
+                        .eq(InterviewSessionQuestionPo::getSessionId, session.getId())
+                        .eq(InterviewSessionQuestionPo::getRoundNo, question.getRoundNo() + 1)
+                        .eq(InterviewSessionQuestionPo::getFollowUpNo, 0));
+                if (next == null) {
+                    throw new BusinessException(InterviewErrorCode.INTERVIEW_QUESTION_NOT_FOUND);
+                }
+            }
+
+            // 只有会话仍停在本题时才推进，避免覆盖另一请求刚刚写入的进度。
+            LambdaUpdateWrapper<InterviewSessionPo> progress = new LambdaUpdateWrapper<InterviewSessionPo>()
+                    .eq(InterviewSessionPo::getId, session.getId())
+                    .eq(InterviewSessionPo::getUserId, session.getUserId())
+                    .eq(InterviewSessionPo::getStatus, InterviewSessionStatusConstant.IN_PROGRESS)
+                    .eq(InterviewSessionPo::getCurrentQuestionId, question.getId());
+            SubmitInterviewAnswerVo result = new SubmitInterviewAnswerVo();
+            if (next == null) {
+                progress.set(InterviewSessionPo::getCurrentQuestionId, null)
+                        .set(InterviewSessionPo::getStatus, InterviewSessionStatusConstant.COMPLETED)
+                        .set(InterviewSessionPo::getCompletedAt, OffsetDateTime.now());
+                result.setStatus(InterviewSessionStatusConstant.COMPLETED);
+            } else {
+                progress.set(InterviewSessionPo::getCurrentQuestionId, next.getId());
+                result.setStatus(InterviewSessionStatusConstant.IN_PROGRESS);
+                result.setNextQuestionId(next.getId());
+                result.setRoundNo(next.getRoundNo());
+                result.setFollowUpNo(next.getFollowUpNo());
+                result.setQuestion(next.getQuestion());
+            }
+            if (!update(progress)) {
+                throw new BusinessException(InterviewErrorCode.INTERVIEW_STATE_CONFLICT);
+            }
+            return result;
+        });
+    }
+
+    /**
+     * 根据本场题干、评分要点和本次回答，一次决定是否追问。
+     * Optional.empty() 表示跳过；接入模型前固定返回占位草稿。
+     */
+    private Optional<FollowUpQuestionDraft> generateFollowUpQuestionDraft(
+            InterviewSessionQuestionPo mainQuestion, String answer) {
+        return Optional.of(new FollowUpQuestionDraft(
+                "滚木题目：Q7#_∴罒%2⊡m9丷^¥z0宁静Ξ|◈亍6≋x凵@F4⟂乂+◇n3彳⊙U8§丿≠k÷艮5⊗~乙R1▒（调用大模型生成追问占位题）",
+                "滚木答案：□9@Z≠凵*4¶s⊥艮7∷k祥◇卩1≋M#乚0⊕x和丿△5^Ω§彡u8⊘冫=H2◈旡~",
+                "[\"6◆J|卩∞8_乂%≔亍令人N0丷⊕u向7◐\", \"亠+R0§往凵⟂4m*⊞乚◇w9冫¤2\"]",
+                "滚木评分：∷V!8丿~弋孙⊡m4亠≔W笑0凹|◈己z6⊕川_χ◒艮2×N#!丶7≋"
+        ));
     }
 }

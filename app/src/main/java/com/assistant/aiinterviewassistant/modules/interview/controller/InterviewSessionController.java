@@ -4,8 +4,10 @@ import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.response.R;
 import com.assistant.aiinterviewassistant.modules.interview.domain.dto.InterviewSessionQueryDto;
 import com.assistant.aiinterviewassistant.modules.interview.domain.dto.SessionCreateDto;
+import com.assistant.aiinterviewassistant.modules.interview.domain.dto.SubmitInterviewAnswerDto;
 import com.assistant.aiinterviewassistant.modules.interview.domain.vo.InterviewSessionDetailVo;
 import com.assistant.aiinterviewassistant.modules.interview.domain.vo.InterviewSessionSummaryVo;
+import com.assistant.aiinterviewassistant.modules.interview.domain.vo.SubmitInterviewAnswerVo;
 import com.assistant.aiinterviewassistant.modules.interview.service.InterviewSessionService;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
@@ -63,5 +65,12 @@ public class InterviewSessionController {
     ){
         interviewSessionService.deleteSession(Long.valueOf(jwt.getSubject()),sessionId);
         return R.ok("面试会话删除成功");
+    }
+    @PostMapping("/submitAnswer")
+    public R<SubmitInterviewAnswerVo> submitAnswer(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody SubmitInterviewAnswerDto dto
+    ){
+        return R.ok(interviewSessionService.submitAnswer(dto,Long.valueOf(jwt.getSubject())),"提交答案成功");
     }
 }
