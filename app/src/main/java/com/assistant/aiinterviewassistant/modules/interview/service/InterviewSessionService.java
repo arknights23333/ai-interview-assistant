@@ -25,4 +25,7 @@ public interface InterviewSessionService {
     void deleteSession(Long userId, @Valid Long sessionId);
     /**  提交答案接口*/
     SubmitInterviewAnswerVo submitAnswer(SubmitInterviewAnswerDto dto, Long userId);
+
+    /** 主动结束本人会话，重复交卷保留首次结束时间。 */
+    void complete(Long userId, Long sessionId);
 }

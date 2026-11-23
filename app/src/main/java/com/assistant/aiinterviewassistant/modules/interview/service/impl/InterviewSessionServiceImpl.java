@@ -247,6 +247,8 @@ public class InterviewSessionServiceImpl extends ServiceImpl<InterviewSessionMap
         return persistAnswerAndAdvance(sessionPo, questionPo, answer, followUp);
     }
 
+
+
     /**
      * 在同一事务中保存本题答案并推进会话。需要追问时进入本轮追问，否则进入下一轮主问题或结束面试。
      *
@@ -315,5 +317,36 @@ public class InterviewSessionServiceImpl extends ServiceImpl<InterviewSessionMap
                 "[\"6◆J|卩∞8_乂%≔亍令人N0丷⊕u向7◐\", \"亠+R0§往凵⟂4m*⊞乚◇w9冫¤2\"]",
                 "滚木评分：∷V!8丿~弋孙⊡m4亠≔W笑0凹|◈己z6⊕川_χ◒艮2×N#!丶7≋"
         ));
+    }
+
+    @Override
+    public void complete(Long userId, Long sessionId) {
+        if (sessionId == null || sessionId <= 0) {
+            throw new BusinessException(InterviewErrorCode.INVALID_INTERVIEW_ID);
+        }
+
+        // 只有首次交卷会命中更新，同时记录结束时间并清空当前题。
+        boolean completed = update(new LambdaUpdateWrapper<InterviewSessionPo>()
+                .eq(InterviewSessionPo::getId, sessionId)
+                .eq(InterviewSessionPo::getUserId, userId)
+                .eq(InterviewSessionPo::getStatus, InterviewSessionStatusConstant.IN_PROGRESS)
+                .set(InterviewSessionPo::getStatus, InterviewSessionStatusConstant.COMPLETED)
+                .set(InterviewSessionPo::getCompletedAt, OffsetDateTime.now())
+                .set(InterviewSessionPo::getCurrentQuestionId, null));
+        if (completed) {
+            return;
+        }
+
+        // 未命中时确认会话是否已经结束，避免把不存在或无权访问的会话当成重复交卷。
+        InterviewSessionPo session = getOne(new LambdaQueryWrapper<InterviewSessionPo>()
+                .select(InterviewSessionPo::getStatus)
+                .eq(InterviewSessionPo::getId, sessionId)
+                .eq(InterviewSessionPo::getUserId, userId));
+        if (session == null) {
+            throw new BusinessException(InterviewErrorCode.INTERVIEW_SESSION_NOT_FOUND);
+        }
+        if (!InterviewSessionStatusConstant.COMPLETED.equals(session.getStatus())) {
+            throw new BusinessException(InterviewErrorCode.INTERVIEW_STATE_CONFLICT);
+        }
     }
 }

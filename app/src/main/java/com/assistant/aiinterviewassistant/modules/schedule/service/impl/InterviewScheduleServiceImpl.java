@@ -4,6 +4,7 @@ import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.exception.enums.ScheduleErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.exception.BusinessException;
 import com.assistant.aiinterviewassistant.common.response.R;
+import com.assistant.aiinterviewassistant.modules.schedule.constant.InterviewScheduleStatusConstant;
 import com.assistant.aiinterviewassistant.modules.schedule.domain.dto.ScheduleCreateDto;
 import com.assistant.aiinterviewassistant.modules.schedule.domain.dto.ScheduleQueryDto;
 import com.assistant.aiinterviewassistant.modules.schedule.domain.dto.ScheduleTimeRangeDto;
@@ -24,15 +25,12 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Set;
 
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class InterviewScheduleServiceImpl extends ServiceImpl<InterviewScheduleMapper, InterviewSchedulePo> implements InterviewScheduleService {
-
-    private static final Set<String> VALID_STATUSES = Set.of("PENDING", "COMPLETED", "CANCELLED");
 
     @Override
     public String createSchedule(Long userId, ScheduleCreateDto dto) {
@@ -77,7 +75,7 @@ public class InterviewScheduleServiceImpl extends ServiceImpl<InterviewScheduleM
 
     @Override
     public void updateScheduleStatus(Long userId, Long id, String status) {
-        if (status == null || !VALID_STATUSES.contains(status)) {
+        if (status == null || !InterviewScheduleStatusConstant.VALID_STATUSES.contains(status)) {
             throw new BusinessException(ScheduleErrorCode.INVALID_STATUS);
         }
 
@@ -96,7 +94,7 @@ public class InterviewScheduleServiceImpl extends ServiceImpl<InterviewScheduleM
 
 
         String status = dto.getStatus();
-        if(status!=null&&!VALID_STATUSES.contains(status)){
+        if(status!=null&&!InterviewScheduleStatusConstant.VALID_STATUSES.contains(status)){
             throw new BusinessException(ScheduleErrorCode.INVALID_STATUS);
         }
 

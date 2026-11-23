@@ -58,6 +58,13 @@ public class InterviewSessionController {
     ){
         return R.ok(interviewSessionService.createSession(Long.valueOf(jwt.getSubject()),dto),"面试训练创建成功");
     }
+
+    /**
+     * 删除文字面试会话接口
+     * @param jwt
+     * @param sessionId
+     * @return
+     */
     @DeleteMapping("/delete")
     public R<Void> deleteSession(
             @AuthenticationPrincipal Jwt jwt,
@@ -66,11 +73,27 @@ public class InterviewSessionController {
         interviewSessionService.deleteSession(Long.valueOf(jwt.getSubject()),sessionId);
         return R.ok("面试会话删除成功");
     }
+
+    /**
+     * 保存答案并返回下一道题id和会话状态
+     * @param jwt
+     * @param dto
+     * @return
+     */
     @PostMapping("/submitAnswer")
     public R<SubmitInterviewAnswerVo> submitAnswer(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody SubmitInterviewAnswerDto dto
     ){
         return R.ok(interviewSessionService.submitAnswer(dto,Long.valueOf(jwt.getSubject())),"提交答案成功");
+    }
+
+    /** 主动结束本人面试，重复交卷同样返回成功。 */
+    @PostMapping("/complete")
+    public R<Void> complete(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody Long sessionId) {
+        interviewSessionService.complete(Long.valueOf(jwt.getSubject()), sessionId);
+        return R.ok("交卷成功");
     }
 }
