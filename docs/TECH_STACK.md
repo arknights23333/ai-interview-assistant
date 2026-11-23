@@ -13,7 +13,7 @@
 | 构建 | Gradle Wrapper 9.8.2；dependency-management 1.1.7 | app 为唯一后端子项目 |
 | 持久层 | MyBatis-Plus 3.5.17，Boot 4 Starter | 已用于各模块，含分页插件与 Mapper 扫描；当前不使用 JPA |
 | 数据库 | Compose：pgvector/pgvector:pg16 | 已使用 PostgreSQL；尚未建立业务向量检索链路 |
-| 迁移 | Spring Boot Flyway Starter、PostgreSQL 支持 | 仓库有 V1～V8，见下表；执行历史需按本机环境核实 |
+| 迁移 | Spring Boot Flyway Starter、PostgreSQL 支持 | 仓库有 V1～V9，见下表；执行历史需按本机环境核实 |
 | 缓存 | Compose Redis 7、Spring Data Redis | 已用于登录会话、验证码和发送间隔控制，支持 Lua 原子操作 |
 | 认证 | Spring Security、BCrypt、Resource Server JWT | 已实现账号认证、JWT 签发与校验、Redis 会话验证、退出和统一认证响应 |
 | 邮件 | Spring Mail / SMTP | 已实现发送验证码，按用途隔离和消费 |
@@ -33,7 +33,7 @@
 | schedule | 新增、修改、状态变更、分页筛选、批量删除 | 邀请解析、提醒及前端日历 | 用户已反馈基本 CRUD 和状态接口手测通过 |
 | knowledgebase | 知识库创建、改名、分页和整库删除；文档批量上传、分页、单个下载和批删 | 文档处理链路、切片、向量化、RAG 会话与引用 | 用户已反馈这 8 个基础接口的成功、失败及归属用例通过 |
 | interview | 会话及本场题目表、PO/Mapper；主问题批保存、题目查询、首次作答、追加追问；会话列表和详情 | 会话创建已建入口但仍为占位，删除、作答推进和结束流程待编排；后续接 AI | 当前以静态检查为依据，未把本轮讨论记作整模块联调通过 |
-| questionbank | 包结构预留 | 题目表、维护接口、状态管理、生成和专项抽题 | 业务尚未实现 |
+| questionbank | V9 提供题库原题和修改草稿表 | 维护接口、状态流转、补充生成与专项抽题 | 迁移脚本已静态检查，业务尚未实现 |
 | model | 包结构预留 | 聊天模型路由与配置、固定 Embedding、语音供应商适配 | 业务尚未实现 |
 | interview/evaluation、voice | 包结构预留 | 评价任务、报告、语音面试 | 业务尚未实现 |
 
@@ -51,6 +51,7 @@
 | V6 | knowledge_base、document |
 | V7 | interview_session、interview_session_question |
 | V8 | 允许提交空答案，仍要求答案与提交时间成对保存 |
+| V9 | question_bank_question，含同库来源文档、修改草稿关联与启用条件 |
 
 执行过的迁移通过新增版本修改。数据库最终结构以完整迁移链及本机 Flyway 历史为准。
 

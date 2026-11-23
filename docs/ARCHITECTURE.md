@@ -65,7 +65,13 @@ Controller 负责路由、入参校验和委托；Service 负责编排、权限�
 
 普通文字面试和知识库专项共用 interview_session、interview_session_question。会话有 user_id；每道主问题和实际提出的追问占题目表一行，保存参考答案、要点、scoring_rubric 等本场快照。会话不再保存 questions_json，也不增加 source_question_id。
 
-题库原题由 questionbank 维护，本场快照归 interview。题库编辑或删除不能改写既有问答。知识库删除后解除会话的 knowledge_base_id，保留来源类型和本场快照，允许继续作答。后续出题和评分依赖本场材料，不回查已删除知识库。
+题库原题由 questionbank 维护。V9 的 `question_bank_question` 同表保存题目与修改草稿，用户归属沿 `knowledge_base.user_id` 校验。每题最多引用一份同库文档。文档删除时由外键级联清理关联题目，知识库删除时也会清理未关联文档的手动题。
+
+- 新题草稿的 `original_question_id` 为空；修改草稿指向同库原题，唯一索引限制每道原题最多一份修改草稿。题库 Service 只为启用原题建立修改草稿，继承原题的知识库、来源文档及最初创建方式。
+- AI 重写先返回建议，采用后才写入草稿。采纳时在同一事务内校验启用条件、更新原题内容并删除修改草稿。放弃修改只删除草稿，启用版 ID 保持稳定。
+- AI 补题按同库、同方向和去掉首尾空白的题干跳过已有或当批重复题。去重属于补题流程；原题与修改草稿可以具有相同题干。
+
+本场快照归 interview。题库编辑或删除不能改写既有问答。知识库删除后解除会话的 knowledge_base_id，保留来源类型和本场快照，允许继续作答。后续追问和评分依赖本场材料。
 
 - 会话 Service 检查用户归属、当前题、状态、追问策略并组装 VO。
 - 题目 Service 负责本场题目保存、查询、首次答案写入及追加追问。查询始终限定 session_id。
