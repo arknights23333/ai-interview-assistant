@@ -17,6 +17,9 @@ public final class QuestionBankConstant {
         /** 已归档。 */
         public static final String ARCHIVED = "ARCHIVED";
 
+        /** 列表筛选允许的状态。 */
+        public static final String VALID_PATTERN = DRAFT + "|" + ACTIVE + "|" + ARCHIVED;
+
         private Status() {}
     }
 
