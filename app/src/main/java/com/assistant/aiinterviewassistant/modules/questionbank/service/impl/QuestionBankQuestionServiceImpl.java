@@ -21,12 +21,15 @@ import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /** 知识库题库题目服务实现。 */
 @Slf4j
@@ -106,6 +109,28 @@ public class QuestionBankQuestionServiceImpl
         BeanUtils.copyProperties(question, detail);
         detail.setKeyPoints(objectMapper.readValue(question.getKeyPointsJson(), new TypeReference<List<String>>() {}));
         return detail;
+    }
+
+    @Override
+    public List<Long> deleteBatch(Long userId, Long knowledgeBaseId, List<Long> ids) {
+        if (ids == null || ids.isEmpty() || ids.stream().anyMatch(id -> id == null || id <= 0)) {
+            throw new BusinessException(QuestionBankErrorCode.INVALID_QUESTION_ID);
+        }
+        knowledgeBaseService.requireOwnedKnowledgeBase(knowledgeBaseId, userId);
+
+        List<Long> targetIds = ids.stream().distinct().toList();
+        List<Long> removedIds;
+        try {
+            removedIds = getBaseMapper().deleteBatchAndReturnIds(userId, knowledgeBaseId, targetIds);
+        } catch (DataAccessException e) {
+            throw new BusinessException(QuestionBankErrorCode.QUESTION_DELETE_FAILED, e);
+        }
+
+        Set<Long> removedIdSet = new HashSet<>(removedIds);
+        List<Long> undeletedIds = targetIds.stream().filter(id -> !removedIdSet.contains(id)).toList();
+        log.info("题库批量删除完成，knowledgeBaseId={} userId={} requested={} deleted={} undeleted={}",
+                knowledgeBaseId, userId, targetIds.size(), removedIdSet.size(), undeletedIds.size());
+        return undeletedIds;
     }
 
     /**

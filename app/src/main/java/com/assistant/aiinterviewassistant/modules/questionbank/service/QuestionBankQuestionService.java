@@ -10,6 +10,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.IService;
 import jakarta.validation.Valid;
 
+import java.util.List;
+
 /** 知识库题库题目服务。 */
 public interface QuestionBankQuestionService extends IService<QuestionBankQuestionPo> {
 
@@ -27,4 +29,7 @@ public interface QuestionBankQuestionService extends IService<QuestionBankQuesti
 
     /** 获取本人题目或修改草稿的完整内容。 */
     QuestionBankQuestionDetailVo getQuestionDetail(Long userId, Long questionId);
+
+    /** 批量删除指定知识库下的题目或修改草稿，返回本次未删除的题目 ID。 */
+    List<Long> deleteBatch(Long userId, Long knowledgeBaseId, List<Long> ids);
 }
