@@ -27,13 +27,13 @@ public class QuestionBankQuestionPo {
     /** 同库来源文档 ID，手动录题时可为空。 */
     private Long sourceDocumentId;
 
-    /** 修改草稿指向的原题 ID，新题草稿和正式题目为空。 */
+    /** 修改草稿对应的原题 ID，正式题目为空。 */
     private Long originalQuestionId;
 
     /** 题目最初的创建方式。 */
     private String creationType;
 
-    /** 题目状态，新建记录默认是草稿。 */
+    /** 题目状态。新题保存时由 Service 显式写入 ACTIVE，DRAFT 表示修改草稿。 */
     private String status;
 
     /** 主问题题干。 */
@@ -57,10 +57,6 @@ public class QuestionBankQuestionPo {
 
     /** 单题评分标准，可为空。 */
     private String scoringRubric;
-
-    /** 候选追问，保存为 JSON 数组。 */
-    @TableField(jdbcType = JdbcType.OTHER, typeHandler = JsonbStringTypeHandler.class)
-    private String followUpCandidatesJson;
 
     /** 记录创建时间。 */
     private OffsetDateTime createdAt;
