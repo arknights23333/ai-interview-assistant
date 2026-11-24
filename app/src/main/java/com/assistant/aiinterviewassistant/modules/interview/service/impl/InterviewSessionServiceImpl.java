@@ -3,8 +3,7 @@ package com.assistant.aiinterviewassistant.modules.interview.service.impl;
 import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.exception.enums.InterviewErrorCode;
 import com.assistant.aiinterviewassistant.common.exception.exception.BusinessException;
-import com.assistant.aiinterviewassistant.modules.interview.constant.InterviewSessionStatusConstant;
-import com.assistant.aiinterviewassistant.modules.interview.constant.InterviewSourceTypeConstant;
+import com.assistant.aiinterviewassistant.modules.interview.constant.InterviewConstant;
 import com.assistant.aiinterviewassistant.modules.interview.domain.dto.FollowUpQuestionDraft;
 import com.assistant.aiinterviewassistant.modules.interview.domain.dto.InterviewSessionQueryDto;
 import com.assistant.aiinterviewassistant.modules.interview.domain.dto.SessionCreateDto;
@@ -144,12 +143,12 @@ public class InterviewSessionServiceImpl extends ServiceImpl<InterviewSessionMap
     @Override
     @Transactional
     public Long createSession(Long userId, SessionCreateDto dto) {
-        if (InterviewSourceTypeConstant.NORMAL.equals(dto.getSourceType())
+        if (InterviewConstant.SourceType.NORMAL.equals(dto.getSourceType())
                 && dto.getKnowledgeBaseId() != null) {
             throw new BusinessException(InterviewErrorCode.INVALID_INTERVIEW_SOURCE);
         }
 
-        if (InterviewSourceTypeConstant.KNOWLEDGE_BASE.equals(dto.getSourceType())
+        if (InterviewConstant.SourceType.KNOWLEDGE_BASE.equals(dto.getSourceType())
                 && dto.getKnowledgeBaseId() == null) {
             throw new BusinessException(InterviewErrorCode.INVALID_INTERVIEW_SOURCE);
         }
@@ -220,7 +219,7 @@ public class InterviewSessionServiceImpl extends ServiceImpl<InterviewSessionMap
             throw new BusinessException(InterviewErrorCode.INTERVIEW_SESSION_NOT_FOUND);
         }
         // 只接受进行中会话的当前题，防止旧页面提交上一题。
-        if (!InterviewSessionStatusConstant.IN_PROGRESS.equals(sessionPo.getStatus())
+        if (!InterviewConstant.Status.IN_PROGRESS.equals(sessionPo.getStatus())
                 || !questionId.equals(sessionPo.getCurrentQuestionId())) {
             throw new BusinessException(InterviewErrorCode.INTERVIEW_STATE_CONFLICT);
         }
@@ -282,17 +281,17 @@ public class InterviewSessionServiceImpl extends ServiceImpl<InterviewSessionMap
             LambdaUpdateWrapper<InterviewSessionPo> progress = new LambdaUpdateWrapper<InterviewSessionPo>()
                     .eq(InterviewSessionPo::getId, session.getId())
                     .eq(InterviewSessionPo::getUserId, session.getUserId())
-                    .eq(InterviewSessionPo::getStatus, InterviewSessionStatusConstant.IN_PROGRESS)
+                    .eq(InterviewSessionPo::getStatus, InterviewConstant.Status.IN_PROGRESS)
                     .eq(InterviewSessionPo::getCurrentQuestionId, question.getId());
             SubmitInterviewAnswerVo result = new SubmitInterviewAnswerVo();
             if (next == null) {
                 progress.set(InterviewSessionPo::getCurrentQuestionId, null)
-                        .set(InterviewSessionPo::getStatus, InterviewSessionStatusConstant.COMPLETED)
+                        .set(InterviewSessionPo::getStatus, InterviewConstant.Status.COMPLETED)
                         .set(InterviewSessionPo::getCompletedAt, OffsetDateTime.now());
-                result.setStatus(InterviewSessionStatusConstant.COMPLETED);
+                result.setStatus(InterviewConstant.Status.COMPLETED);
             } else {
                 progress.set(InterviewSessionPo::getCurrentQuestionId, next.getId());
-                result.setStatus(InterviewSessionStatusConstant.IN_PROGRESS);
+                result.setStatus(InterviewConstant.Status.IN_PROGRESS);
                 result.setNextQuestionId(next.getId());
                 result.setRoundNo(next.getRoundNo());
                 result.setFollowUpNo(next.getFollowUpNo());
@@ -329,8 +328,8 @@ public class InterviewSessionServiceImpl extends ServiceImpl<InterviewSessionMap
         boolean completed = update(new LambdaUpdateWrapper<InterviewSessionPo>()
                 .eq(InterviewSessionPo::getId, sessionId)
                 .eq(InterviewSessionPo::getUserId, userId)
-                .eq(InterviewSessionPo::getStatus, InterviewSessionStatusConstant.IN_PROGRESS)
-                .set(InterviewSessionPo::getStatus, InterviewSessionStatusConstant.COMPLETED)
+                .eq(InterviewSessionPo::getStatus, InterviewConstant.Status.IN_PROGRESS)
+                .set(InterviewSessionPo::getStatus, InterviewConstant.Status.COMPLETED)
                 .set(InterviewSessionPo::getCompletedAt, OffsetDateTime.now())
                 .set(InterviewSessionPo::getCurrentQuestionId, null));
         if (completed) {
@@ -345,7 +344,7 @@ public class InterviewSessionServiceImpl extends ServiceImpl<InterviewSessionMap
         if (session == null) {
             throw new BusinessException(InterviewErrorCode.INTERVIEW_SESSION_NOT_FOUND);
         }
-        if (!InterviewSessionStatusConstant.COMPLETED.equals(session.getStatus())) {
+        if (!InterviewConstant.Status.COMPLETED.equals(session.getStatus())) {
             throw new BusinessException(InterviewErrorCode.INTERVIEW_STATE_CONFLICT);
         }
     }

@@ -1,6 +1,6 @@
 package com.assistant.aiinterviewassistant.modules.interview.domain.dto;
 
-import com.assistant.aiinterviewassistant.modules.interview.constant.InterviewSourceTypeConstant;
+import com.assistant.aiinterviewassistant.modules.interview.constant.InterviewConstant;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -19,7 +19,7 @@ public class SessionCreateDto {
 
     /** 题目来源：NORMAL 普通面试，KNOWLEDGE_BASE 知识库专项。 */
     @NotBlank(message = "面试题目来源不能为空")
-    @Pattern(regexp = InterviewSourceTypeConstant.VALID_PATTERN, message = "面试题目来源不合法")
+    @Pattern(regexp = InterviewConstant.SourceType.VALID_PATTERN, message = "面试题目来源不合法")
     private String sourceType;
 
     /** 岗位方向或专项题库方向。 */
@@ -27,9 +27,9 @@ public class SessionCreateDto {
     @Size(max = 64, message = "面试方向不能超过64个字符")
     private String jobDirection;
 
-    /** 本场面试的难度标识。 */
+    /** 本场面试的难度，取值为 EASY、MEDIUM、HARD。 */
     @NotBlank(message = "面试难度不能为空")
-    @Size(max = 16, message = "面试难度不能超过16个字符")
+    @Pattern(regexp = InterviewConstant.Difficulty.VALID_PATTERN, message = "面试难度必须为 EASY、MEDIUM 或 HARD")
     private String difficulty;
 
     /** 关联的本人简历 ID，可不传。 */
