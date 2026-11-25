@@ -35,6 +35,18 @@ public final class QuestionBankConstant {
         private CreationType() {}
     }
 
+    /** 创建草稿时由后端填充的内容。 */
+    public static final class DraftPlaceholder {
+
+        /** 题干被显式置空时写入的占位文本，满足题干非空白约束。 */
+        public static final String QUESTION = "待补充题干";
+
+        /** 评分要点被显式清空时写入的空数组。 */
+        public static final String EMPTY_KEY_POINTS_JSON = "[]";
+
+        private DraftPlaceholder() {}
+    }
+
     /** 题库题目的难度。 */
     public static final class Difficulty {
 

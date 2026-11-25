@@ -2,6 +2,7 @@ package com.assistant.aiinterviewassistant.modules.questionbank.controller;
 
 import com.assistant.aiinterviewassistant.common.domain.dto.PageQuery;
 import com.assistant.aiinterviewassistant.common.response.R;
+import com.assistant.aiinterviewassistant.modules.questionbank.domain.dto.CreateDraftDto;
 import com.assistant.aiinterviewassistant.modules.questionbank.domain.dto.CreateQuestionDto;
 import com.assistant.aiinterviewassistant.modules.questionbank.domain.dto.QuestionBankQueryDto;
 import com.assistant.aiinterviewassistant.modules.questionbank.domain.vo.QuestionBankQuestionDetailVo;
@@ -76,5 +77,13 @@ public class QuestionBankController {
             @PathVariable("knowledgeBaseId") Long knowledgeBaseId,
             @RequestParam(value = "ids", required = false) List<Long> ids) {
         return R.ok(questionBankQuestionService.deleteBatch(Long.valueOf(jwt.getSubject()), knowledgeBaseId, ids));
+    }
+    /** 为原题目创建修改草稿；原题 ID 由请求体传入。 */
+    @PostMapping("/createDraft")
+    public R<QuestionBankQuestionDetailVo> createDraft(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody CreateDraftDto dto
+    ){
+        return R.ok(questionBankQuestionService.createDraft(dto, Long.valueOf(jwt.getSubject())));
     }
 }

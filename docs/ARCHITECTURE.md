@@ -1,6 +1,6 @@
 # 后端结构与模块协作
 
-更新日期：2026-11-24。本文保存长期设计与数据约定，模块实现和验证状态集中在 [TECH_STACK](TECH_STACK.md)，接手入口在 [README](../README.md)。
+更新日期：2026-11-25。本文保存长期设计与数据约定，模块实现和验证状态集中在 [TECH_STACK](TECH_STACK.md)，接手入口在 [README](../README.md)。
 
 ## 工程边界
 
@@ -70,8 +70,11 @@ Controller 负责路由、入参校验和委托；Service 负责编排、权限�
 - 新题通过完整性校验后，由保存流程显式写入 `ACTIVE`，`original_question_id` 为空。创建请求包含知识库 ID、可选来源文档和题目内容。评分要点以 `List<String> keyPoints` 接收，保存时序列化到 `key_points_json`。
 - 手动创建入口与未来的 AI 异步消费者共用 `saveQuestion`。手动入口传 `MANUAL`，AI 消费者拿到生成结果后传 `AI_GENERATED`。创建方式作为 Service 参数传入，用户 ID 来自 JWT 或任务记录。通用保存流程负责校验 DTO 和知识库归属，来源文档存在时校验同库，AI 生成题须提供来源文档。
 - 题库在 `QuestionBankConstant.Difficulty` 中定义 `EASY`、`MEDIUM`、`HARD`，并用这三个值组成请求校验表达式。新题须填写题干、岗位方向、难度、参考答案和至少一个非空白评分要点。
-- 修改草稿指向同库原题，唯一索引限制每道原题最多一份修改草稿。题库 Service 为启用题建立草稿时继承原题的知识库、来源文档及最初创建方式。
-- AI 重写先返回建议，采用后才写入草稿。采纳时在同一事务内校验启用条件、更新原题内容并删除修改草稿。放弃修改只删除草稿，启用版 ID 保持稳定。
+- 修改草稿指向同库原题，唯一索引限制每道原题最多一份修改草稿。创建草稿时继承原题的知识库 ID、来源文档及最初创建方式。`knowledgeBaseId` 是归属字段，创建后不可更改；草稿保存和采纳都不改归属。若未来支持跨库移动，需单独接口并在同一事务内校验双方知识库归属、来源文档和已有草稿。
+- 创建草稿 DTO 包含全部可编辑内容字段，但允许为空。字段语义统一为：字段不传或为 `null` 表示沿用原题；空字符串表示显式置空；非空值表示覆盖。`keyPoints` 用 `null` 表示沿用，空数组表示显式清空，非空数组表示覆盖。前端不传 `knowledgeBaseId`、`creationType`、`status`、`userId`。
+- 后端对空值按数据库约束兜底：`question` 置空时写入占位符，常量放在 `QuestionBankConstant` 中；`keyPoints` 置空时写 `[]`；数据库可空的 `jobDirection`、`difficulty`、`category`、`referenceAnswer`、`scoringRubric` 置空时存 `null`。纯空白字符串按空值处理。`sourceDocumentId` 为空时继承原题，非空时校验同库后覆盖；第一版不支持清空来源文档。
+- 草稿相关接口按动作拆分：创建草稿按原题 ID 操作，保存草稿按草稿 ID 提交内容，采纳和放弃只按草稿 ID 操作。采纳接口不接收题目内容，避免绕过完整性校验。
+- AI 重写先返回建议，采用后才写入草稿。采纳时先做完整性校验：`question` 仍为占位符、`jobDirection`/`difficulty`/`referenceAnswer` 为空或全空白、`keyPoints` 为空数组时返回 `QUESTION_NOT_READY`。校验通过后在同一事务内更新原题内容并删除修改草稿，原题 ID 和知识库归属保持不变。放弃修改只删除草稿，启用版 ID 保持稳定。
 - AI 补题按同库、同方向和去掉首尾空白的题干跳过已有或当批重复题，通过筛选的新题走通用保存流程。原题与修改草稿可以具有相同题干。
 
 本场快照归 interview。题库编辑或删除不能改写既有问答。知识库删除后解除会话的 knowledge_base_id，保留来源类型和本场快照，允许继续作答。后续追问和评分依赖本场材料。
@@ -86,7 +89,7 @@ Controller 负责路由、入参校验和委托；Service 负责编排、权限�
 
 ## 数据与资源生命周期
 
-- 每个模块在自己的 `constant` 包集中维护一个模块常量类，按业务含义用静态嵌套类分组。题库使用 `QuestionBankConstant`，包含 `Status`、`CreationType` 和 `Difficulty`。面试模块使用 `InterviewConstant`，包含 `Status`、`SourceType` 和 `Difficulty`。新建含状态字段的 PO 时，把状态取值归入所属模块的常量类，保持与数据库约束一致。参与跨模块筛选的字段在各模块定义常量，取值遵循同一业务约定。
+- 每个模块在自己的 `constant` 包集中维护一个模块常量类，按业务含义用静态嵌套类分组。题库使用 `QuestionBankConstant`，包含 `Status`、`CreationType`、`Difficulty` 和草稿题干占位符常量。面试模块使用 `InterviewConstant`，包含 `Status`、`SourceType` 和 `Difficulty`。新建含状态字段的 PO 时，把状态取值归入所属模块的常量类，保持与数据库约束一致。参与跨模块筛选的字段在各模块定义常量，取值遵循同一业务约定。
 - 主键 BIGINT 映射 Long；TIMESTAMPTZ 映射 OffsetDateTime。时间字段沿用各表实际命名，更新默认值只负责插入，后续更新由应用维护。
 - 迁移位于 app/src/main/resources/db/migration；已执行版本不改写，结构变化新增迁移。
 - 简历按用户与文件名加内容的哈希去重，回收站也在唯一范围内；相同记录可复用或恢复。知识库文档按同库内容哈希去重，改名复用返回已有文件名。
